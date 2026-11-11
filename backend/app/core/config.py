@@ -11,8 +11,15 @@ class Settings(BaseSettings):
     SCRAPECREATORS_API_KEY: Optional[str] = None
     SCRAPECREATORS_BASE_URL: str = "https://api.scrapecreators.com"
     
-    SYNTHESIS_API_KEY: Optional[str] = None
-    SYNTHESIS_MODEL: str = "gpt-4o-mini"
+    # Configurações Multi-LLM para Failover
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+    
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL: str = "deepseek-r1-distill-llama-70b"
+    
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_MODEL: str = "deepseek/deepseek-r1:free"
     
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

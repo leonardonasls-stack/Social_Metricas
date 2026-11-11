@@ -7,7 +7,7 @@ from uuid import UUID
 from app.core.database import get_db
 from app.models import Niche, Analysis, PainPoint, RecommendedFeature, HookCopy, FaqItem, DossierReport
 from app.schemas import AnalysisCreateRequest, AnalysisResponse, DossierResponse
-from app.services.scrapecreators.mock_miner import MockMiner
+from app.services.llm_orchestrator import LLMOrchestrator
 from app.services.dossier_compiler import DossierCompiler
 
 router = APIRouter(prefix="/analyses", tags=["Analyses"])
@@ -54,11 +54,10 @@ async def create_or_get_analysis(
             resp.is_cached = True
             return resp
 
-    # 3. Cache Miss / Force Refresh -> Executa Motor de Mineração (Mock ou Live)
-    # Por padrão inicial usamos o MockMiner (sandbox de alta fidelidade)
-    raw_data = MockMiner.generate_mock_analysis(
+    # 3. Cache Miss / Force Refresh -> Executa Orquestrador Multi-LLM com Failover
+    raw_data = await LLMOrchestrator.synthesize(
         keyword=keyword_clean,
-        sources=payload.sources
+        niche_name=niche.name
     )
 
     # 4. Grava Nova Análise no PostgreSQL
