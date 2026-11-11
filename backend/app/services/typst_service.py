@@ -1,3 +1,5 @@
+import tempfile
+import os
 import typst
 from typing import Dict, Any, List
 from datetime import datetime
@@ -33,8 +35,18 @@ class TypstPdfService:
             hooks=hooks,
             faqs=faqs
         )
-        # Compila diretamente da memória para bytes de PDF
-        return typst.compile(typ_code.encode("utf-8"))
+        
+        # Cria arquivo temporário seguro para compilação garantida em qualquer versão do binding typst
+        with tempfile.NamedTemporaryFile(suffix=".typ", mode="w", encoding="utf-8", delete=False) as tmp_in:
+            tmp_in.write(typ_code)
+            tmp_in_path = tmp_in.name
+
+        try:
+            pdf_bytes = typst.compile(tmp_in_path)
+            return pdf_bytes
+        finally:
+            if os.path.exists(tmp_in_path):
+                os.remove(tmp_in_path)
 
     @classmethod
     def _escape(cls, text: str) -> str:
@@ -42,7 +54,8 @@ class TypstPdfService:
         if not text:
             return ""
         return (
-            text.replace("\\", "\\\\")
+            str(text)
+            .replace("\\", "\\\\")
             .replace("[", "\\[")
             .replace("]", "\\]")
             .replace("#", "\\#")
@@ -69,7 +82,6 @@ class TypstPdfService:
         niche_esc = cls._escape(niche_name)
 
         doc = []
-        # Configuração do Documento Typst (A4 Portrait, Margens, Cabeçalho e Rodapé Automático)
         doc.append(f"""
 #set page(
   paper: "a4",
@@ -81,7 +93,7 @@ class TypstPdfService:
         Métrica Social-Media — Documento Técnico Confidencial
       ]),
       align(right, text(fill: rgb("#64748b"), size: 8pt)[
-        #counter(page).display("1 / 1", both: true)
+        #counter(page).display()
       ])
     )
   ]
@@ -145,10 +157,9 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
   - *Incidência Estimada:* `{freq}% das menções` | *Severidade:* `{severity}`
   - *Diagnóstico Operacional:* {desc}
 """)
-            if fin_impact:
+            if fin_impact and fin_impact != "None":
                 doc.append(f"  - *⚠️ Impacto Financeiro na Operação:* _{fin_impact}_\n")
 
-            # Depoimentos / Comentários Literais
             comments = getattr(p, "sample_comments", p.get("sample_comments", [])) or []
             if comments:
                 doc.append("  #v(1mm)\n  *Depoimentos Reais Minerados (A Voz do Cliente):*\n")
@@ -169,8 +180,8 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
 #table(
   columns: (28pt, 1fr, 1.3fr, 22pt, 22pt, 22pt, 22pt, 40pt),
   stroke: 0.5pt + rgb("#cbd5e1"),
-  fill: (col, row) => if row == 0 { rgb("#f1f5f9") } else { none },
-  align: (col, row) => if col in (0, 3, 4, 5, 6, 7) { center } else { left },
+  fill: (col, row) => if row == 0 {{ rgb("#f1f5f9") }} else {{ none }},
+  align: (col, row) => if col in (0, 3, 4, 5, 6, 7) {{ center }} else {{ left }},
   [#text(weight: "bold")[Rank]],
   [#text(weight: "bold")[Feature Proposta]],
   [#text(weight: "bold")[Justificativa]],
@@ -207,7 +218,7 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
 #block(breakable: false)[
   === Feature #{idx}: {f_title}
 """)
-            if u_story:
+            if u_story and u_story != "None":
                 doc.append(f"  *História de Usuário (User Story):*\n  _{u_story}_\n\n")
 
             if crits:
@@ -216,11 +227,11 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
                     cr_esc = cls._escape(cr)
                     doc.append(f"  - [x] {cr_esc}\n")
 
-            if e_break or t_notes:
+            if (e_break and e_break != "None") or (t_notes and t_notes != "None"):
                 doc.append(f"  #v(1mm)\n  *Arquitetura & Estimativa de Esforço:*\n")
-                if e_break:
+                if e_break and e_break != "None":
                     doc.append(f"  - *Justificativa:* {e_break}\n")
-                if t_notes:
+                if t_notes and t_notes != "None":
                     doc.append(f"  - *Diretriz Técnica:* `{t_notes}`\n")
             doc.append("]\n")
 
