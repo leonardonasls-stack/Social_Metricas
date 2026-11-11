@@ -2,22 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Configuração Geral da Aplicação */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+/* ========================================================
+   REGRAS DE IMPRESSÃO EXECUTIVA / EXPORTAÇÃO PDF A4
+   Garante 100% de largura, sem bordas de cards, sem sombras,
+   com quebras de página perfeitas e sem cortes de conteúdo.
+   ======================================================== */
 @media print {
-  body {
-    background-color: #ffffff !important;
-    color: #0f172a !important;
+  /* Reseta a página para tamanho A4 padrão com margens limpas */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
   }
 
-  .no-print {
+  /* Força fundo branco e texto escuro de alto contraste */
+  html, body, #app {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Oculta tudo o que for de interface da web */
+  header,
+  nav,
+  .no-print,
+  button,
+  .modal,
+  .drawer {
     display: none !important;
   }
 
-  .print-only {
-    display: block !important;
+  /* Remove containers escuros, bordas com cantos arredondados e sombras */
+  .dossier-card-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
-  .break-inside-avoid {
-    break-inside: avoid !important;
+  main {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Evita quebras de página desagradáveis no meio de seções críticas */
+  h1, h2, h3, h4 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    color: #0f172a !important;
+  }
+
+  table, tr, td, th {
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  blockquote {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Ajuste de tabelas no papel */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9.5pt !important;
+    margin-top: 10px !important;
+    margin-bottom: 15px !important;
+  }
+
+  th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
+  }
+
+  td {
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    padding: 6px 8px !important;
+  }
+
+  /* Citações / Depoimentos reais */
+  blockquote {
+    border-left: 3px solid #6366f1 !important;
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    padding: 8px 12px !important;
+    margin: 8px 0 !important;
+    font-style: italic !important;
+  }
+
+  code {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 1px 4px !important;
+    border-radius: 4px !important;
+    font-size: 9pt !important;
   }
 }

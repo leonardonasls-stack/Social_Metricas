@@ -39,8 +39,8 @@ const printDossier = () => {
 </script>
 
 <template>
-  <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
-    <!-- Header com Ações -->
+  <div class="dossier-card-container bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
+    <!-- Header com Ações (Ocultado na impressão via no-print) -->
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-700/80 no-print">
       <div>
         <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -102,10 +102,10 @@ const printDossier = () => {
       </div>
     </div>
 
-    <!-- Conteúdo Renderizado (Preview Executivo) -->
-    <div v-if="activeTab === 'preview'" class="mt-6">
+    <!-- Conteúdo Renderizado (Preview Executivo & Impressão A4) -->
+    <div v-if="activeTab === 'preview'" class="mt-6 print:mt-0">
       <div
-        class="prose prose-invert prose-indigo max-w-none text-slate-200 leading-relaxed space-y-4 print:text-slate-900 print:prose-neutral"
+        class="prose prose-invert prose-indigo max-w-none text-slate-200 leading-relaxed space-y-4 print:prose-neutral print:text-slate-900 print:max-w-none print:w-full"
         v-html="renderedHtml"
       ></div>
     </div>
@@ -122,32 +122,61 @@ const printDossier = () => {
 </template>
 
 <style>
-/* Estilos para o HTML Renderizado via markdown-it */
+/* Estilos para a tela normal (Dark Mode) */
 .prose h1 {
-  @apply text-2xl font-extrabold text-white pb-3 border-b border-slate-700/80 mb-4 tracking-tight print:text-slate-900 print:border-slate-300;
+  @apply text-2xl font-extrabold text-white pb-3 border-b border-slate-700/80 mb-4 tracking-tight;
 }
 .prose h2 {
-  @apply text-lg font-bold text-indigo-300 mt-6 mb-3 tracking-tight flex items-center gap-2 print:text-slate-900;
+  @apply text-lg font-bold text-indigo-300 mt-6 mb-3 tracking-tight flex items-center gap-2;
 }
 .prose h3 {
-  @apply text-base font-semibold text-slate-200 mt-4 mb-2 print:text-slate-800;
+  @apply text-base font-semibold text-slate-200 mt-4 mb-2;
 }
 .prose p {
-  @apply text-sm text-slate-300 mb-3 leading-relaxed print:text-slate-700;
+  @apply text-sm text-slate-300 mb-3 leading-relaxed;
 }
 .prose table {
-  @apply w-full text-left border-collapse text-xs my-4 rounded-xl overflow-hidden border border-slate-700/80 print:border-slate-300;
+  @apply w-full text-left border-collapse text-xs my-4 rounded-xl overflow-hidden border border-slate-700/80;
 }
 .prose th {
-  @apply bg-slate-900/90 text-slate-300 font-semibold p-3 border-b border-slate-700/80 print:bg-slate-100 print:text-slate-900 print:border-slate-300;
+  @apply bg-slate-900/90 text-slate-300 font-semibold p-3 border-b border-slate-700/80;
 }
 .prose td {
-  @apply p-3 border-b border-slate-800/80 text-slate-300 print:text-slate-800 print:border-slate-200;
+  @apply p-3 border-b border-slate-800/80 text-slate-300;
 }
 .prose code {
-  @apply font-mono text-xs bg-slate-900/80 text-indigo-300 px-1.5 py-0.5 rounded border border-slate-700/60 print:bg-slate-100 print:text-slate-900 print:border-slate-300;
+  @apply font-mono text-xs bg-slate-900/80 text-indigo-300 px-1.5 py-0.5 rounded border border-slate-700/60;
 }
 .prose blockquote {
-  @apply border-l-4 border-indigo-500 bg-indigo-950/20 px-4 py-2 rounded-r-lg my-4 text-xs text-indigo-200/90 italic print:bg-slate-50 print:text-slate-700;
+  @apply border-l-4 border-indigo-500 bg-indigo-950/20 px-4 py-2 rounded-r-lg my-4 text-xs text-indigo-200/90 italic;
+}
+
+/* Overrides Específicos para a Impressão A4 Limpa */
+@media print {
+  .prose h1 {
+    font-size: 18pt !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  .prose h2 {
+    font-size: 14pt !important;
+    color: #1e293b !important;
+    margin-top: 18px !important;
+    margin-bottom: 8px !important;
+  }
+  .prose h3 {
+    font-size: 11pt !important;
+    color: #334155 !important;
+    margin-top: 12px !important;
+    margin-bottom: 6px !important;
+  }
+  .prose p {
+    font-size: 10pt !important;
+    color: #334155 !important;
+    line-height: 1.5 !important;
+    margin-bottom: 8px !important;
+  }
 }
 </style>
