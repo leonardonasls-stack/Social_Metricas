@@ -58,8 +58,8 @@ const exportDirectPdf = async () => {
 
 <template>
   <div class="dossier-card-container bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
-    <!-- Header com Ações -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+    <!-- Header com Ações (Completamente ocultado na impressão via no-print) -->
+    <div class="no-print flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
       <div>
         <h2 class="text-xl font-bold text-white flex items-center gap-2">
           <FileText class="w-5 h-5 text-indigo-400" />
