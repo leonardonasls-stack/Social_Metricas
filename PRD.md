@@ -20,13 +20,14 @@ Fábricas de software, desenvolvedores independentes e agências de tecnologia f
 - Bloqueio criativo na hora de escrever copys, ganchos e FAQs anti-objeção.
 
 ### 1.2 A Solução
-O **Métrica Social-Media** é uma plataforma analítica de pesquisa de mercado e inteligência de produto. Integrado às skills especializadas do **ScrapeCreators** (`comment-mining`, `transcript-summarization`, `outlier-identification` e `ad-library-teardown`), o sistema orquestra a coleta de inteligência em redes sociais (TikTok, Instagram, YouTube, Reddit e Meta Ads) e transforma dados brutos em:
+O **Métrica Social-Media** é uma plataforma analítica de pesquisa de mercado e inteligência de produto. Integrado às skills especializadas do **ScrapeCreators** (`comment-mining`, `transcript-summarization`, `outlier-identification` e `ad-library-teardown`) e a um **Motor de Síntese Multi-LLM com Failover Automático** (Google Gemini, Groq/DeepSeek R1, OpenRouter e Fallback Local), o sistema orquestra a coleta de inteligência em redes sociais (TikTok, Instagram, YouTube, Reddit e Meta Ads) e transforma dados brutos em:
 1. **Dores e Objeções Reais dos Usuários** (para priorização de backlog e arquitetura de dados).
 2. **Features Validadas por Demanda com RICE Score** (Reach, Impact, Confidence e Effort calculados para cada funcionalidade).
 3. **Headlines e Copywriting de Alta Conversão** (baseados nos termos, ganchos e transcrições de vídeos virais).
 4. **FAQ Anti-Fricção** (as dúvidas críticas mais frequentes nos comentários que travam o checkout/venda).
 5. **Dossiê Técnico em Markdown com Impressão Executiva** (relatório formatado para propostas comerciais de alto valor e entrega técnica).
 6. **Base de Conhecimento Acumulativa por Nicho em PostgreSQL** (cache inteligente para consultas instantâneas e custo zero em buscas repetidas).
+7. **Resiliência Multi-Provedor com Failover de Tokens:** Alternância automática de provedor de IA gratuito caso a cota de tokens se esgote, garantindo zero indisponibilidade.
 
 ---
 
@@ -107,6 +108,7 @@ flowchart TD
 | **RF-10** | Visualizador Markdown (Tabs) | Visualização renderizada e editor de código raw com cópia rápida em 1 clique. | Essencial (P0) |
 | **RF-11** | Impressão e PDF Executivo | Layout A4 limpo via `@media print` para exportação comercial. | Alta (P1) |
 | **RF-12** | Persistência Relacional PostgreSQL | Armazenamento de nichos, análises, métricas RICE e dossiês versionados. | Essencial (P0) |
+| **RF-13** | Orquestrador Multi-LLM (Failover) | Alternância automática entre Gemini, Groq (DeepSeek/Llama) e OpenRouter caso esgotem os tokens. | Essencial (P0) |
 
 ---
 

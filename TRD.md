@@ -89,6 +89,30 @@ backend/app/services/
 
 ---
 
+## 2.3 Motor de Síntese Multi-LLM com Failover Automático
+
+Para garantir que a análise não produza dados genéricos e nunca fique fora do ar caso uma cota de tokens se esgote, o backend adota uma arquitetura em cascata (*Waterfall Failover*):
+
+```mermaid
+flowchart TD
+    Req[Demanda de Síntese Analítica] --> Try1{1. Google Gemini 1.5/2.0 Flash}
+    Try1 -->|Sucesso 200| OK[Retorna JSON Estruturado]
+    Try1 -->|429 Rate Limit / Sem Token| Try2{2. Groq Cloud: DeepSeek-R1 / Llama-3.3}
+    Try2 -->|Sucesso 200| OK
+    Try2 -->|429 Rate Limit / Erro| Try3{3. OpenRouter Free Tier}
+    Try3 -->|Sucesso 200| OK
+    Try3 -->|Todas sem chave ou esgotadas| Fallback[4. Motor Heurístico Semântico Local]
+    Fallback --> OK
+```
+
+### Provedores Integrados:
+1. **Google Gemini API:** `gemini-1.5-flash` ou `gemini-2.0-flash` (via endpoint oficial do Google AI Studio).
+2. **Groq Cloud API:** `deepseek-r1-distill-llama-70b` ou `llama-3.3-70b-versatile` (compatível com protocolo OpenAI).
+3. **OpenRouter API:** `deepseek/deepseek-r1:free` ou `meta-llama/llama-3.3-70b:free`.
+4. **Motor Contextual Local (Fallback Offline):** Dicionário semântico com detecção de nicho para B2B/Gestão (OS, ERPs), Turismo, Saúde e Serviços.
+
+---
+
 ## 3. Modelo de Dados Relacional (PostgreSQL)
 
 ```mermaid
