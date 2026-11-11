@@ -34,42 +34,127 @@ const copyToClipboard = async () => {
   }
 }
 
-// Exportação Direta para PDF sem margens fantasmas e com alinhamento de topo exato
+// Exportação Direta de PDF via html2pdf com folha de estilos editorial injetada
 const exportDirectPdf = async () => {
   if (exporting.value) return
   exporting.value = true
 
   try {
-    const sourceElement = document.getElementById('dossier-print-content')
-    if (!sourceElement) {
-      throw new Error('Elemento de conteúdo não encontrado.')
-    }
+    // 1. Cria um container temporário anexado ao body (invisível na tela)
+    const printContainer = document.createElement('div')
+    printContainer.id = 'temp-pdf-export-container'
+    printContainer.style.position = 'fixed'
+    printContainer.style.left = '-9999px'
+    printContainer.style.top = '0'
+    printContainer.style.width = '794px' // Largura exata A4 (96 DPI)
+    printContainer.style.backgroundColor = '#ffffff'
+    printContainer.style.color = '#0f172a'
+    printContainer.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    printContainer.style.padding = '0'
+    printContainer.style.margin = '0'
 
-    // Cria um container clone isolado do DOM atual para eliminar qualquer scroll, padding ou offset acumulado
-    const cloneWrapper = document.createElement('div')
-    cloneWrapper.style.width = '794px' // Largura exata A4 a 96 DPI
-    cloneWrapper.style.backgroundColor = '#ffffff'
-    cloneWrapper.style.color = '#0f172a'
-    cloneWrapper.style.padding = '0'
-    cloneWrapper.style.margin = '0'
-    cloneWrapper.style.boxSizing = 'border-box'
-    cloneWrapper.innerHTML = sourceElement.innerHTML
+    // 2. Estilos específicos do documento impresso (tabelas com borda, títulos destacados, citações)
+    const editorialCss = `
+      <style>
+        #temp-pdf-export-container h1 {
+          font-size: 22px !important;
+          font-weight: 800 !important;
+          color: #0f172a !important;
+          border-bottom: 2px solid #e2e8f0 !important;
+          padding-bottom: 8px !important;
+          margin-top: 0 !important;
+          margin-bottom: 12px !important;
+          line-height: 1.3 !important;
+        }
+        #temp-pdf-export-container h2 {
+          font-size: 16px !important;
+          font-weight: 700 !important;
+          color: #1e293b !important;
+          border-bottom: 1px solid #f1f5f9 !important;
+          padding-bottom: 4px !important;
+          margin-top: 22px !important;
+          margin-bottom: 10px !important;
+          page-break-after: avoid;
+        }
+        #temp-pdf-export-container h3 {
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          color: #334155 !important;
+          margin-top: 14px !important;
+          margin-bottom: 6px !important;
+          page-break-after: avoid;
+        }
+        #temp-pdf-export-container h4 {
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          color: #475569 !important;
+          margin-top: 10px !important;
+          margin-bottom: 4px !important;
+        }
+        #temp-pdf-export-container p, 
+        #temp-pdf-export-container li {
+          font-size: 11px !important;
+          color: #334155 !important;
+          line-height: 1.6 !important;
+          margin-bottom: 8px !important;
+        }
+        #temp-pdf-export-container table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          font-size: 10px !important;
+          margin: 14px 0 !important;
+          page-break-inside: avoid;
+        }
+        #temp-pdf-export-container th {
+          background-color: #f8fafc !important;
+          color: #0f172a !important;
+          font-weight: 700 !important;
+          border: 1px solid #cbd5e1 !important;
+          padding: 6px 8px !important;
+          text-align: left !important;
+        }
+        #temp-pdf-export-container td {
+          border: 1px solid #e2e8f0 !important;
+          color: #1e293b !important;
+          padding: 6px 8px !important;
+        }
+        #temp-pdf-export-container blockquote {
+          border-left: 4px solid #4f46e5 !important;
+          background-color: #f8fafc !important;
+          color: #334155 !important;
+          padding: 8px 12px !important;
+          margin: 10px 0 !important;
+          font-style: italic !important;
+          page-break-inside: avoid;
+        }
+        #temp-pdf-export-container code {
+          background-color: #f1f5f9 !important;
+          color: #1e293b !important;
+          border: 1px solid #e2e8f0 !important;
+          padding: 1px 4px !important;
+          border-radius: 4px !important;
+          font-size: 9.5px !important;
+          font-family: monospace !important;
+        }
+        #temp-pdf-export-container hr {
+          border: 0 !important;
+          border-top: 1px solid #e2e8f0 !important;
+          margin: 16px 0 !important;
+        }
+      </style>
+    `
 
-    // Aplica classes de estilo direto no primeiro h1 para colar no topo
-    const firstH1 = cloneWrapper.querySelector('h1')
-    if (firstH1) {
-      firstH1.style.marginTop = '0'
-      firstH1.style.paddingTop = '0'
-    }
+    printContainer.innerHTML = editorialCss + renderedHtml.value
+    document.body.appendChild(printContainer)
 
     const opt = {
-      margin: [10, 12, 10, 12], // mm: topo, esquerda, baixo, direita (margens compactas elegantes)
+      margin: [10, 12, 10, 12], // mm: topo, esquerda, baixo, direita
       filename: `Dossie_${props.keyword.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
         scale: 2,
         useCORS: true,
-        scrollY: 0, // Zera offset de scroll para não empurrar para baixo!
+        scrollY: 0,
         scrollX: 0,
         backgroundColor: '#ffffff'
       },
@@ -86,10 +171,11 @@ const exportDirectPdf = async () => {
     // @ts-ignore
     if (window.html2pdf) {
       // @ts-ignore
-      await window.html2pdf().set(opt).from(cloneWrapper).save()
-    } else {
-      window.print()
+      await window.html2pdf().set(opt).from(printContainer).save()
     }
+
+    // Remove elemento temporário do DOM
+    document.body.removeChild(printContainer)
   } catch (err) {
     console.error('Erro ao gerar PDF:', err)
   } finally {
@@ -99,9 +185,9 @@ const exportDirectPdf = async () => {
 </script>
 
 <template>
-  <div class="dossier-card-container bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
-    <!-- Header com Ações (Nunca sai no PDF) -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-700/80 no-print">
+  <div class="dossier-card-container bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
+    <!-- Header com Ações -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
       <div>
         <h2 class="text-xl font-bold text-white flex items-center gap-2">
           <FileText class="w-5 h-5 text-indigo-400" />
@@ -114,7 +200,7 @@ const exportDirectPdf = async () => {
 
       <div class="flex items-center gap-2.5 self-stretch sm:self-auto">
         <!-- Alternador Visualizar vs Raw -->
-        <div class="bg-slate-900/80 p-1 rounded-lg border border-slate-700/80 flex items-center">
+        <div class="bg-slate-950 p-1 rounded-lg border border-slate-800 flex items-center">
           <button
             @click="activeTab = 'preview'"
             :class="[
@@ -144,14 +230,14 @@ const exportDirectPdf = async () => {
         <!-- Botão Copiar -->
         <button
           @click="copyToClipboard"
-          class="px-3 py-2 bg-slate-700/70 hover:bg-slate-600/80 text-slate-200 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 border border-slate-600/60"
+          class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 border border-slate-700"
         >
           <Check v-if="copied" class="w-4 h-4 text-emerald-400" />
           <Copy v-else class="w-4 h-4 text-slate-300" />
           <span>{{ copied ? 'Copiado!' : 'Copiar' }}</span>
         </button>
 
-        <!-- Botão Exportar PDF Direto -->
+        <!-- Botão Exportar PDF -->
         <button
           @click="exportDirectPdf"
           :disabled="exporting"
@@ -164,142 +250,63 @@ const exportDirectPdf = async () => {
       </div>
     </div>
 
-    <!-- Conteúdo do Documento (Preview Web e Fonte de Captura) -->
+    <!-- Conteúdo do Documento no Frontend (Preview Dark Mode) -->
     <div v-show="activeTab === 'preview'" class="mt-6">
       <div
-        id="dossier-print-content"
-        class="prose prose-invert prose-indigo max-w-none text-slate-200 leading-relaxed space-y-4"
+        class="prose prose-invert prose-indigo max-w-none text-slate-100 leading-relaxed space-y-4"
         v-html="renderedHtml"
       ></div>
     </div>
 
     <!-- Conteúdo Raw (Editor Monoespaçado) -->
-    <div v-if="activeTab === 'raw'" class="mt-6 no-print">
+    <div v-if="activeTab === 'raw'" class="mt-6">
       <textarea
         readonly
         :value="markdown"
-        class="w-full h-[600px] p-4 bg-slate-900/90 text-indigo-200/90 font-mono text-xs rounded-xl border border-slate-700/80 focus:outline-none resize-y selection:bg-indigo-500 selection:text-white"
+        class="w-full h-[600px] p-4 bg-slate-950 text-indigo-300 font-mono text-xs rounded-xl border border-slate-800 focus:outline-none resize-y selection:bg-indigo-500 selection:text-white"
       ></textarea>
     </div>
   </div>
 </template>
 
 <style>
-/* Estilos Dark Mode para visualização Web */
+/* =======================================================
+   ESTILOS DARK MODE PARA A TELA WEB (ALTO CONTRASTE E LEGIBILIDADE)
+   ======================================================= */
 .prose h1 {
-  @apply text-2xl font-extrabold text-white pb-3 border-b border-slate-700/80 mb-4 tracking-tight;
+  @apply text-2xl font-extrabold text-white pb-3 border-b border-slate-800 mb-4 tracking-tight;
 }
 .prose h2 {
-  @apply text-lg font-bold text-indigo-300 mt-6 mb-3 tracking-tight flex items-center gap-2;
+  @apply text-lg font-bold text-indigo-400 mt-6 mb-3 tracking-tight border-b border-slate-800/60 pb-1.5 flex items-center gap-2;
 }
 .prose h3 {
-  @apply text-base font-semibold text-slate-200 mt-4 mb-2;
+  @apply text-base font-semibold text-slate-100 mt-4 mb-2;
 }
-.prose p {
-  @apply text-sm text-slate-300 mb-3 leading-relaxed;
+.prose h4 {
+  @apply text-sm font-semibold text-indigo-300 mt-3 mb-1;
+}
+.prose p, .prose li {
+  @apply text-sm text-slate-200 mb-3 leading-relaxed;
+}
+.prose strong {
+  @apply text-white font-semibold;
 }
 .prose table {
-  @apply w-full text-left border-collapse text-xs my-4 rounded-xl overflow-hidden border border-slate-700/80;
+  @apply w-full text-left border-collapse text-xs my-4 rounded-xl overflow-hidden border border-slate-800;
 }
 .prose th {
-  @apply bg-slate-900/90 text-slate-300 font-semibold p-3 border-b border-slate-700/80;
+  @apply bg-slate-950 text-slate-200 font-bold p-3 border-b border-slate-800;
 }
 .prose td {
-  @apply p-3 border-b border-slate-800/80 text-slate-300;
+  @apply p-3 border-b border-slate-800/80 text-slate-200;
 }
 .prose code {
-  @apply font-mono text-xs bg-slate-900/80 text-indigo-300 px-1.5 py-0.5 rounded border border-slate-700/60;
+  @apply font-mono text-xs bg-slate-950 text-indigo-300 px-2 py-0.5 rounded border border-slate-800;
 }
 .prose blockquote {
-  @apply border-l-4 border-indigo-500 bg-indigo-950/20 px-4 py-2 rounded-r-lg my-4 text-xs text-indigo-200/90 italic;
+  @apply border-l-4 border-indigo-500 bg-slate-950/80 px-4 py-3 rounded-r-lg my-4 text-xs text-indigo-200 italic shadow-inner;
 }
-
-/* =======================================================
-   ESTILOS ESPECÍFICOS PARA O CLONE CAPTURADO NO PDF
-   Garante início imediato no topo sem margem fantasma
-   ======================================================= */
-#dossier-print-content {
-  background-color: transparent;
-}
-
-#dossier-print-content > h1:first-child {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-/* Regras aplicadas aos elementos exportados */
-#dossier-print-content h1 {
-  color: #0f172a !important;
-  border-bottom: 2px solid #e2e8f0 !important;
-  font-size: 20pt !important;
-  padding-bottom: 6px !important;
-  margin-bottom: 12px !important;
-}
-
-#dossier-print-content h2 {
-  color: #1e293b !important;
-  font-size: 14pt !important;
-  margin-top: 20px !important;
-  margin-bottom: 8px !important;
-  page-break-after: avoid;
-  break-after: avoid;
-}
-
-#dossier-print-content h3 {
-  color: #334155 !important;
-  font-size: 11pt !important;
-  margin-top: 14px !important;
-  margin-bottom: 6px !important;
-  page-break-after: avoid;
-  break-after: avoid;
-}
-
-#dossier-print-content p, 
-#dossier-print-content li {
-  color: #334155 !important;
-  font-size: 10pt !important;
-  line-height: 1.5 !important;
-}
-
-#dossier-print-content table {
-  width: 100% !important;
-  border-collapse: collapse !important;
-  font-size: 9pt !important;
-  margin: 12px 0 !important;
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-#dossier-print-content th {
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
-  border: 1px solid #cbd5e1 !important;
-  padding: 6px 8px !important;
-}
-
-#dossier-print-content td {
-  border: 1px solid #e2e8f0 !important;
-  color: #1e293b !important;
-  padding: 6px 8px !important;
-}
-
-#dossier-print-content blockquote {
-  border-left: 4px solid #6366f1 !important;
-  background-color: #f8fafc !important;
-  color: #475569 !important;
-  padding: 8px 12px !important;
-  margin: 8px 0 !important;
-  font-style: italic !important;
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-#dossier-print-content code {
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
-  border: 1px solid #e2e8f0 !important;
-  padding: 1px 4px !important;
-  border-radius: 4px !important;
-  font-size: 8.5pt !important;
+.prose hr {
+  @apply border-slate-800 my-6;
 }
 </style>
