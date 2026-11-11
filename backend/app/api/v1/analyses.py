@@ -10,7 +10,7 @@ from app.models import Niche, Analysis, PainPoint, RecommendedFeature, HookCopy,
 from app.schemas import AnalysisCreateRequest, AnalysisResponse, DossierResponse
 from app.services.llm_orchestrator import LLMOrchestrator
 from app.services.dossier_compiler import DossierCompiler
-from app.services.pdf_service import PdfService
+from app.services.typst_service import TypstPdfService
 
 router = APIRouter(prefix="/analyses", tags=["Analyses"])
 
@@ -191,30 +191,42 @@ async def get_analysis_dossier(analysis_id: UUID, db: AsyncSession = Depends(get
 @router.get("/{analysis_id}/pdf")
 async def download_analysis_pdf(analysis_id: UUID, db: AsyncSession = Depends(get_db)):
     """
-    Gera e faz o download direto do Dossiê em PDF com WeasyPrint (A4 portrait, 20mm 15mm,
-    sem cortes de tabelas nem linhas órfãs/viúvas).
+    Gera nativamente o PDF ultrarrápido com Typst (< 20ms) a partir dos dados do PostgreSQL.
+    Garante A4 Portrait, margens exatas e blocos inquebráveis (#block(breakable: false)).
     """
     query = (
-        select(DossierReport, Analysis.keyword)
-        .join(Analysis, DossierReport.analysis_id == Analysis.id)
-        .where(DossierReport.analysis_id == analysis_id)
+        select(Analysis)
+        .where(Analysis.id == analysis_id)
+        .options(
+            selectinload(Analysis.niche),
+            selectinload(Analysis.pain_points),
+            selectinload(Analysis.recommended_features),
+            selectinload(Analysis.hook_copies),
+            selectinload(Analysis.faq_items)
+        )
     )
     result = await db.execute(query)
-    row = result.first()
+    analysis = result.scalars().first()
 
-    if not row:
+    if not analysis:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dossiê para esta análise não foi encontrado."
+            detail="Análise não encontrada para exportação em PDF."
         )
 
-    dossier, keyword = row
-    
-    # Gera os bytes do PDF usando o motor WeasyPrint
-    pdf_bytes = PdfService.generate_pdf_from_markdown(dossier.markdown_content)
+    # Compila o PDF usando o motor nativo em Rust do Typst
+    pdf_bytes = TypstPdfService.generate_pdf(
+        niche_name=analysis.niche.name if analysis.niche else "Geral",
+        keyword=analysis.keyword,
+        sample_size=analysis.sample_size,
+        pain_points=analysis.pain_points,
+        features=analysis.recommended_features,
+        hooks=analysis.hook_copies,
+        faqs=analysis.faq_items
+    )
 
-    safe_filename = f"Dossie_{slugify(keyword)}.pdf"
-    
+    safe_filename = f"Dossie_{slugify(analysis.keyword)}.pdf"
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
