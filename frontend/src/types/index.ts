@@ -1,19 +1,13 @@
-export interface Niche {
-  id: string
-  name: string
-  slug: string
-  description?: string
-  total_analyses: number
-  created_at: string
-  updated_at: string
-}
-
 export interface PainPoint {
   category: string
   title: string
   description?: string
   frequency_percentage: number
   severity: 'low' | 'medium' | 'high' | 'critical'
+  // Detalhes aprofundados
+  sample_comments?: string[]
+  financial_impact?: string
+  competitors_affected?: string[]
 }
 
 export interface RecommendedFeature {
@@ -24,18 +18,38 @@ export interface RecommendedFeature {
   confidence: number
   effort: number
   rice_score: number
+  // Detalhes aprofundados
+  user_story?: string
+  acceptance_criteria?: string[]
+  effort_breakdown?: string
+  technical_notes?: string
 }
 
 export interface HookCopy {
   placement: string
   hook_text: string
   intent: string
+  // Detalhes aprofundados
+  variations?: string[]
+  page_position?: string
 }
 
 export interface FaqItem {
   question: string
   answer_suggestion: string
   friction_level: number
+  // Detalhes aprofundados
+  placement_tip?: string
+}
+
+export interface Niche {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  total_analyses: number
+  created_at: string
+  updated_at: string
 }
 
 export interface Analysis {

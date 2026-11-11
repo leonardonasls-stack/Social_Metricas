@@ -11,15 +11,18 @@ import {
   Check,
   PlusCircle,
   Database,
-  ArrowRight
+  ArrowRight,
+  ExternalLink,
+  ChevronRight
 } from 'lucide-vue-next'
 import { fetchNiches, createNiche, runAnalysis, fetchDossier } from '@/services/api'
-import type { Niche, Analysis, Dossier } from '@/types'
+import type { Niche, Analysis, Dossier, PainPoint, RecommendedFeature } from '@/types'
 import MarkdownViewer from '@/components/MarkdownViewer.vue'
+import DetailDrawer from '@/components/DetailDrawer.vue'
 
 const niches = ref<Niche[]>([])
 const selectedNicheId = ref<string>('')
-const keyword = ref<string>('passeio de quadriciclo')
+const keyword = ref<string>('sistema de ordem de serviço')
 const forceRefresh = ref<boolean>(false)
 const mode = ref<string>('mock')
 const selectedSources = ref<string[]>(['reddit', 'tiktok', 'instagram', 'youtube'])
@@ -32,6 +35,12 @@ const newNicheName = ref<string>('')
 const showNewNicheModal = ref<boolean>(false)
 const copiedHook = ref<string | null>(null)
 
+// Estados do Slide-over Drawer
+const isDrawerOpen = ref<boolean>(false)
+const drawerType = ref<'pain' | 'feature' | null>(null)
+const selectedPain = ref<PainPoint | null>(null)
+const selectedFeature = ref<RecommendedFeature | null>(null)
+
 // Carrega Nichos na Inicialização
 onMounted(async () => {
   try {
@@ -42,8 +51,8 @@ onMounted(async () => {
     } else {
       // Cria nicho padrão inicial
       const defaultNiche = await createNiche(
-        'Turismo de Aventura & Lazer',
-        'Passeios de quadriciclo, lanchas, trilhas ecológicas e ecoturismo'
+        'Tecnologia SaaS & Software',
+        'Softwares de gestão, ordem de serviço, ERPs e ferramentas produtivas'
       )
       niches.value = [defaultNiche]
       selectedNicheId.value = defaultNiche.id
@@ -90,6 +99,22 @@ const handleSearch = async () => {
   }
 }
 
+const openPainDetail = (pain: PainPoint) => {
+  selectedPain.value = pain
+  drawerType.value = 'pain'
+  isDrawerOpen.value = true
+}
+
+const openFeatureDetail = (feature: RecommendedFeature) => {
+  selectedFeature.value = feature
+  drawerType.value = 'feature'
+  isDrawerOpen.value = true
+}
+
+const closeDrawer = () => {
+  isDrawerOpen.value = false
+}
+
 const copyText = async (text: string) => {
   await navigator.clipboard.writeText(text)
   copiedHook.value = text
@@ -112,7 +137,7 @@ const copyText = async (text: string) => {
             <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
               Métrica Social-Media
               <span class="text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">
-                v1.0
+                v1.1 Multi-LLM
               </span>
             </h1>
             <p class="text-xs text-slate-400">Social Intelligence for App & Landing Page Builders</p>
@@ -167,7 +192,7 @@ const copyText = async (text: string) => {
               <input
                 v-model="keyword"
                 @keyup.enter="handleSearch"
-                placeholder="Ex: passeio de quadriciclo, clínica de estética, software de agendamento"
+                placeholder="Ex: sistema de ordem de serviço, passeio de quadriciclo, clínica de estética"
                 class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-500"
               />
               <Search class="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -178,7 +203,6 @@ const copyText = async (text: string) => {
         <!-- Opções Avançadas e Botão de Ação -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-3 border-t border-slate-800/80">
           <div class="flex flex-wrap items-center gap-3">
-            <!-- Modo Mock vs Live -->
             <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
               <input
                 type="checkbox"
@@ -190,7 +214,6 @@ const copyText = async (text: string) => {
               Modo Sandbox (Mock de Alta Fidelidade)
             </label>
 
-            <!-- Forçar Atualização (Ignorar Cache) -->
             <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
               <input
                 type="checkbox"
@@ -208,7 +231,7 @@ const copyText = async (text: string) => {
           >
             <Sparkles v-if="!loading" class="w-4 h-4" />
             <div v-else class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            <span>{{ loading ? 'Minerando Redes Sociais...' : 'Analisar Mercado' }}</span>
+            <span>{{ loading ? 'Sintetizando Mercado...' : 'Analisar Mercado' }}</span>
           </button>
         </div>
       </section>
@@ -241,23 +264,27 @@ const copyText = async (text: string) => {
         </div>
       </div>
 
-      <!-- VISÃO 1: DASHBOARD DE INSIGHTS -->
+      <!-- VISÃO 1: DASHBOARD DE INSIGHTS COM ELEMENTOS CLICÁVEIS -->
       <div v-if="currentAnalysis && activeTab === 'insights'" class="space-y-8 no-print">
-        <!-- 1. Dores e Objeções Mineradas -->
+        <!-- 1. Dores e Objeções Mineradas (Clicáveis) -->
         <div>
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              <AlertTriangle class="w-5 h-5 text-amber-400" />
-              Dores e Objeções Recorrentes (Comment Mining)
-            </h2>
-            <span class="text-xs text-slate-400">Classificado por frequência de queixas</span>
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <AlertTriangle class="w-5 h-5 text-amber-400" />
+                Dores e Objeções Recorrentes (Comment Mining)
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Clique em qualquer card para ver comentários reais minerados e impacto financeiro.</p>
+            </div>
+            <span class="text-xs text-slate-400 hidden sm:inline">Classificado por frequência de queixas</span>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
               v-for="(pain, idx) in currentAnalysis.pain_points"
               :key="idx"
-              class="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 transition-all shadow-md"
+              @click="openPainDetail(pain)"
+              class="group bg-slate-900/90 border border-slate-800 hover:border-indigo-500/80 hover:bg-slate-800/50 rounded-2xl p-5 transition-all shadow-md cursor-pointer relative"
             >
               <div class="flex items-center justify-between gap-2 mb-2">
                 <span class="text-xs font-semibold text-indigo-400 bg-indigo-950/60 border border-indigo-800/40 px-2 py-0.5 rounded-md">
@@ -274,13 +301,21 @@ const copyText = async (text: string) => {
                   {{ pain.severity }} ({{ pain.frequency_percentage }}%)
                 </span>
               </div>
-              <h3 class="text-sm font-semibold text-white mb-1.5">{{ pain.title }}</h3>
-              <p class="text-xs text-slate-400 leading-relaxed">{{ pain.description }}</p>
+              <h3 class="text-sm font-semibold text-white mb-1.5 group-hover:text-indigo-300 transition-colors flex items-center justify-between">
+                <span>{{ pain.title }}</span>
+                <ChevronRight class="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-transform group-hover:translate-x-1 shrink-0" />
+              </h3>
+              <p class="text-xs text-slate-400 leading-relaxed line-clamp-2">{{ pain.description }}</p>
+              
+              <div class="mt-3 pt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 group-hover:text-slate-400">
+                <span>🔍 Ver comentários de clientes e impacto</span>
+                <span class="text-indigo-400 font-medium">Abrir Raio-X &rarr;</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 2. Matriz de Features com RICE Score -->
+        <!-- 2. Matriz de Features com RICE Score (Linhas Clicáveis) -->
         <div>
           <div class="flex items-center justify-between mb-4">
             <div>
@@ -288,7 +323,7 @@ const copyText = async (text: string) => {
                 <TrendingUp class="w-5 h-5 text-emerald-400" />
                 Matriz de Features com RICE Score (Priorização de Backlog)
               </h2>
-              <p class="text-xs text-slate-400 mt-0.5">O que construir primeiro com base matemática nas dores mineradas.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Clique em uma linha para ver a User Story, Critérios de Aceite e notas técnicas.</p>
             </div>
           </div>
 
@@ -305,18 +340,31 @@ const copyText = async (text: string) => {
                     <th class="p-3.5 text-center">C</th>
                     <th class="p-3.5 text-center">E</th>
                     <th class="p-3.5 text-center text-emerald-400">RICE Score</th>
+                    <th class="p-3.5 text-center">Ação</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800/80 text-slate-300">
-                  <tr v-for="(feat, idx) in currentAnalysis.recommended_features" :key="idx" class="hover:bg-slate-800/40">
+                  <tr
+                    v-for="(feat, idx) in currentAnalysis.recommended_features"
+                    :key="idx"
+                    @click="openFeatureDetail(feat)"
+                    class="hover:bg-slate-800/70 cursor-pointer transition-colors group"
+                  >
                     <td class="p-3.5 text-center font-bold text-slate-400">#{{ idx + 1 }}</td>
-                    <td class="p-3.5 font-semibold text-white whitespace-nowrap">{{ feat.title }}</td>
+                    <td class="p-3.5 font-semibold text-white whitespace-nowrap group-hover:text-emerald-300 transition-colors">
+                      {{ feat.title }}
+                    </td>
                     <td class="p-3.5 text-slate-400 max-w-md">{{ feat.rationale }}</td>
-                    <td class="p-3.5 text-center">{{ feat.reach }}</td>
-                    <td class="p-3.5 text-center">{{ feat.impact }}</td>
-                    <td class="p-3.5 text-center">{{ feat.confidence }}</td>
-                    <td class="p-3.5 text-center">{{ feat.effort }}</td>
+                    <td class="p-3.5 text-center font-mono">{{ feat.reach }}</td>
+                    <td class="p-3.5 text-center font-mono">{{ feat.impact }}</td>
+                    <td class="p-3.5 text-center font-mono">{{ feat.confidence }}</td>
+                    <td class="p-3.5 text-center font-mono">{{ feat.effort }}</td>
                     <td class="p-3.5 text-center font-extrabold text-sm text-emerald-400">{{ feat.rice_score }}</td>
+                    <td class="p-3.5 text-center">
+                      <span class="text-[11px] text-indigo-400 bg-indigo-950/40 border border-indigo-800/40 px-2 py-1 rounded-md group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                        Especificar &rarr;
+                      </span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -336,7 +384,7 @@ const copyText = async (text: string) => {
               <div
                 v-for="(hook, idx) in currentAnalysis.hook_copies"
                 :key="idx"
-                class="p-3.5 bg-slate-800/70 border border-slate-700/60 rounded-xl relative group"
+                class="p-3.5 bg-slate-800/70 border border-slate-700/60 rounded-xl relative group hover:border-slate-600 transition-all"
               >
                 <div class="flex items-center justify-between text-[10px] font-semibold text-slate-400 uppercase mb-1">
                   <span>{{ hook.placement }}</span>
@@ -398,10 +446,19 @@ const copyText = async (text: string) => {
         </div>
         <h3 class="text-base font-bold text-white">Nenhuma análise carregada</h3>
         <p class="text-xs text-slate-400 leading-relaxed">
-          Selecione um nicho temático, digite a palavra-chave (ex: <em>"passeio de quadriciclo"</em>) e clique em <strong>Analisar Mercado</strong> para minerar dores reais e gerar seu Dossiê Técnico.
+          Selecione um nicho temático, digite a palavra-chave (ex: <em>"sistema de ordem de serviço"</em>) e clique em <strong>Analisar Mercado</strong>.
         </p>
       </div>
     </main>
+
+    <!-- Slide-Over Drawer para Detalhamento Clicável -->
+    <DetailDrawer
+      :is-open="isDrawerOpen"
+      :type="drawerType"
+      :pain-data="selectedPain"
+      :feature-data="selectedFeature"
+      @close="closeDrawer"
+    />
 
     <!-- Modal Novo Nicho -->
     <div
