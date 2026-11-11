@@ -17,7 +17,18 @@ html, body {
   /* Reseta a página para tamanho A4 padrão com margens limpas */
   @page {
     size: A4 portrait;
-    margin: 15mm 15mm 15mm 15mm;
+    margin: 15mm;
+  }
+
+  /* Força fundo branco e texto escuro de alto contraste */
+  html, body, #app {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
   }
 
   /* Oculta estritamente qualquer cabeçalho de navegação, barra ou container de ação */
@@ -38,27 +49,15 @@ html, body {
     padding: 0 !important;
     margin: 0 !important;
     border-radius: 0 !important;
+    backdrop-filter: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   /* Garante que o primeiro H1 comece exatamente no topo da folha */
   #dossier-rendered-view > h1:first-child {
     margin-top: 0 !important;
     padding-top: 0 !important;
-  }
-    display: none !important;
-  }
-
-  /* Remove containers escuros, bordas com cantos arredondados e sombras */
-  .dossier-card-container {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    backdrop-filter: none !important;
-    width: 100% !important;
-    max-width: 100% !important;
   }
 
   main {
