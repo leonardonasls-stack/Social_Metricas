@@ -50,6 +50,20 @@ async def create_or_get_analysis(
         cached_analysis = result.scalars().first()
         
         if cached_analysis:
+            # Se for um dossiê antigo que não tinha a Seção 3.1, recompila na hora
+            if cached_analysis.dossier_report and "3.1 Especificação de Engenharia" not in cached_analysis.dossier_report.markdown_content:
+                recompiled_md = DossierCompiler.compile_from_models(
+                    niche_name=niche.name,
+                    keyword=cached_analysis.keyword,
+                    sample_size=cached_analysis.sample_size,
+                    pain_points=cached_analysis.pain_points,
+                    features=cached_analysis.recommended_features,
+                    hooks=cached_analysis.hook_copies,
+                    faqs=cached_analysis.faq_items
+                )
+                cached_analysis.dossier_report.markdown_content = recompiled_md
+                await db.commit()
+
             resp = AnalysisResponse.model_validate(cached_analysis)
             resp.is_cached = True
             return resp
@@ -71,18 +85,44 @@ async def create_or_get_analysis(
     db.add(new_analysis)
     await db.flush()  # Obtém ID da análise
 
-    # Adiciona itens relacionais
+    # Adiciona itens relacionais filtrando campos extras do prompt de síntese
     for p in raw_data["pain_points"]:
-        db.add(PainPoint(analysis_id=new_analysis.id, **p))
+        db.add(PainPoint(
+            analysis_id=new_analysis.id,
+            category=p.get("category", "Geral"),
+            title=p.get("title", ""),
+            description=p.get("description", ""),
+            frequency_percentage=float(p.get("frequency_percentage", 0.0)),
+            severity=p.get("severity", "medium")
+        ))
 
     for f in raw_data["recommended_features"]:
-        db.add(RecommendedFeature(analysis_id=new_analysis.id, **f))
+        db.add(RecommendedFeature(
+            analysis_id=new_analysis.id,
+            title=f.get("title", ""),
+            rationale=f.get("rationale", ""),
+            reach=int(f.get("reach", 5)),
+            impact=int(f.get("impact", 5)),
+            confidence=int(f.get("confidence", 5)),
+            effort=int(f.get("effort", 5)),
+            rice_score=float(f.get("rice_score", 0.0))
+        ))
 
     for h in raw_data["hook_copies"]:
-        db.add(HookCopy(analysis_id=new_analysis.id, **h))
+        db.add(HookCopy(
+            analysis_id=new_analysis.id,
+            placement=h.get("placement", "hero_headline"),
+            hook_text=h.get("hook_text", ""),
+            intent=h.get("intent", "social_proof")
+        ))
 
     for faq in raw_data["faq_items"]:
-        db.add(FaqItem(analysis_id=new_analysis.id, **faq))
+        db.add(FaqItem(
+            analysis_id=new_analysis.id,
+            question=faq.get("question", ""),
+            answer_suggestion=faq.get("answer_suggestion", ""),
+            friction_level=int(faq.get("friction_level", 3))
+        ))
 
     # Gera e compila Dossiê em Markdown
     markdown_doc = DossierCompiler.compile_markdown(

@@ -104,3 +104,69 @@ class DossierCompiler:
         md.append("---\n*Relatório gerado automaticamente pela plataforma Métrica Social-Media. Documento técnico executivo para planejamento de produto, propostas comerciais e arquitetura de software.*")
         
         return "\n".join(md)
+
+    @classmethod
+    def compile_from_models(
+        cls,
+        niche_name: str,
+        keyword: str,
+        sample_size: int,
+        pain_points: list,
+        features: list,
+        hooks: list,
+        faqs: list
+    ) -> str:
+        """Recompila o Markdown diretamente a partir dos modelos persistidos no PostgreSQL."""
+        data = {
+            "sample_size": sample_size,
+            "pain_points": [
+                {
+                    "category": getattr(p, "category", "Geral"),
+                    "title": getattr(p, "title", ""),
+                    "description": getattr(p, "description", ""),
+                    "frequency_percentage": getattr(p, "frequency_percentage", 0),
+                    "severity": getattr(p, "severity", "medium"),
+                    "financial_impact": getattr(p, "financial_impact", None),
+                    "competitors_affected": getattr(p, "competitors_affected", None),
+                    "sample_comments": getattr(p, "sample_comments", None)
+                }
+                for p in pain_points
+            ],
+            "recommended_features": [
+                {
+                    "title": getattr(f, "title", ""),
+                    "rationale": getattr(f, "rationale", ""),
+                    "reach": getattr(f, "reach", 5),
+                    "impact": getattr(f, "impact", 5),
+                    "confidence": getattr(f, "confidence", 5),
+                    "effort": getattr(f, "effort", 5),
+                    "rice_score": getattr(f, "rice_score", 0),
+                    "user_story": getattr(f, "user_story", None),
+                    "acceptance_criteria": getattr(f, "acceptance_criteria", None),
+                    "effort_breakdown": getattr(f, "effort_breakdown", None),
+                    "technical_notes": getattr(f, "technical_notes", None)
+                }
+                for f in features
+            ],
+            "hook_copies": [
+                {
+                    "placement": getattr(h, "placement", ""),
+                    "hook_text": getattr(h, "hook_text", ""),
+                    "intent": getattr(h, "intent", ""),
+                    "variations": getattr(h, "variations", None),
+                    "page_position": getattr(h, "page_position", None)
+                }
+                for h in hooks
+            ],
+            "faq_items": [
+                {
+                    "question": getattr(faq, "question", ""),
+                    "answer_suggestion": getattr(faq, "answer_suggestion", ""),
+                    "friction_level": getattr(faq, "friction_level", 3),
+                    "placement_tip": getattr(faq, "placement_tip", None)
+                }
+                for faq in faqs
+            ]
+        }
+        return cls.compile_markdown(niche_name, keyword, data)
+
