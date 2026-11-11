@@ -34,26 +34,43 @@ const copyToClipboard = async () => {
   }
 }
 
-// Exportação Direta para Arquivo PDF Limpo (Sem janela de impressão do navegador)
+// Exportação Direta para PDF sem margens fantasmas e com alinhamento de topo exato
 const exportDirectPdf = async () => {
   if (exporting.value) return
   exporting.value = true
 
   try {
-    const element = document.getElementById('dossier-print-content')
-    if (!element) {
+    const sourceElement = document.getElementById('dossier-print-content')
+    if (!sourceElement) {
       throw new Error('Elemento de conteúdo não encontrado.')
     }
 
-    // Configuração do html2pdf para gerar um A4 editorial impecável
+    // Cria um container clone isolado do DOM atual para eliminar qualquer scroll, padding ou offset acumulado
+    const cloneWrapper = document.createElement('div')
+    cloneWrapper.style.width = '794px' // Largura exata A4 a 96 DPI
+    cloneWrapper.style.backgroundColor = '#ffffff'
+    cloneWrapper.style.color = '#0f172a'
+    cloneWrapper.style.padding = '0'
+    cloneWrapper.style.margin = '0'
+    cloneWrapper.style.boxSizing = 'border-box'
+    cloneWrapper.innerHTML = sourceElement.innerHTML
+
+    // Aplica classes de estilo direto no primeiro h1 para colar no topo
+    const firstH1 = cloneWrapper.querySelector('h1')
+    if (firstH1) {
+      firstH1.style.marginTop = '0'
+      firstH1.style.paddingTop = '0'
+    }
+
     const opt = {
-      margin: [15, 15, 15, 15], // mm: topo, esquerda, baixo, direita
+      margin: [10, 12, 10, 12], // mm: topo, esquerda, baixo, direita (margens compactas elegantes)
       filename: `Dossie_${props.keyword.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
         scale: 2,
         useCORS: true,
-        letterRendering: true,
+        scrollY: 0, // Zera offset de scroll para não empurrar para baixo!
+        scrollX: 0,
         backgroundColor: '#ffffff'
       },
       jsPDF: {
@@ -62,16 +79,15 @@ const exportDirectPdf = async () => {
         orientation: 'portrait'
       },
       pagebreak: {
-        mode: ['avoid-all', 'css', 'legacy']
+        mode: ['css', 'legacy']
       }
     }
 
-    // @ts-ignore (html2pdf carregado via CDN bundle)
+    // @ts-ignore
     if (window.html2pdf) {
       // @ts-ignore
-      await window.html2pdf().set(opt).from(element).save()
+      await window.html2pdf().set(opt).from(cloneWrapper).save()
     } else {
-      console.warn('html2pdf não encontrado, utilizando fallback de impressão limpo.')
       window.print()
     }
   } catch (err) {
@@ -135,7 +151,7 @@ const exportDirectPdf = async () => {
           <span>{{ copied ? 'Copiado!' : 'Copiar' }}</span>
         </button>
 
-        <!-- NOVO BOTÃO: EXPORTAR PDF DIRETO (1-Click Download) -->
+        <!-- Botão Exportar PDF Direto -->
         <button
           @click="exportDirectPdf"
           :disabled="exporting"
@@ -148,11 +164,11 @@ const exportDirectPdf = async () => {
       </div>
     </div>
 
-    <!-- Conteúdo do Documento (Elemento capturado para o PDF) -->
-    <div v-show="activeTab === 'preview'" class="mt-6 print:mt-0">
+    <!-- Conteúdo do Documento (Preview Web e Fonte de Captura) -->
+    <div v-show="activeTab === 'preview'" class="mt-6">
       <div
         id="dossier-print-content"
-        class="prose prose-invert prose-indigo max-w-none text-slate-200 leading-relaxed space-y-4 print:prose-neutral print:text-slate-900 print:max-w-none print:w-full bg-transparent"
+        class="prose prose-invert prose-indigo max-w-none text-slate-200 leading-relaxed space-y-4"
         v-html="renderedHtml"
       ></div>
     </div>
@@ -199,15 +215,19 @@ const exportDirectPdf = async () => {
 }
 
 /* =======================================================
-   ESTILOS ESPECÍFICOS PARA A CAPTURA E GERAÇÃO DO PDF
-   (Cores corporativas, fundo branco e sem quebra de tabelas)
+   ESTILOS ESPECÍFICOS PARA O CLONE CAPTURADO NO PDF
+   Garante início imediato no topo sem margem fantasma
    ======================================================= */
 #dossier-print-content {
-  /* Quando capturado pelo html2canvas */
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: transparent;
 }
 
+#dossier-print-content > h1:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Regras aplicadas aos elementos exportados */
 #dossier-print-content h1 {
   color: #0f172a !important;
   border-bottom: 2px solid #e2e8f0 !important;
@@ -220,7 +240,7 @@ const exportDirectPdf = async () => {
   color: #1e293b !important;
   font-size: 14pt !important;
   margin-top: 20px !important;
-  margin-bottom: 10px !important;
+  margin-bottom: 8px !important;
   page-break-after: avoid;
   break-after: avoid;
 }
