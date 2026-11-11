@@ -433,6 +433,7 @@ const copyText = async (text: string) => {
         <MarkdownViewer
           :markdown="currentDossier.markdown_content"
           :keyword="currentDossier.keyword"
+          :analysis-id="currentDossier.analysis_id"
         />
       </div>
 

@@ -41,3 +41,21 @@ export const fetchDossier = async (analysisId: string): Promise<Dossier> => {
   const response = await api.get(`/analyses/${analysisId}/dossier`)
   return response.data
 }
+
+export const downloadDossierPdf = async (analysisId: string, keyword: string): Promise<void> => {
+  const response = await api.get(`/analyses/${analysisId}/pdf`, {
+    responseType: 'blob'
+  })
+  
+  // Cria link temporário para forçar o download direto
+  const blob = new Blob([response.data], { type: 'application/pdf' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', `Dossie_${keyword.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+

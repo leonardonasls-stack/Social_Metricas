@@ -2,10 +2,12 @@
 import { ref, computed } from 'vue'
 import MarkdownIt from 'markdown-it'
 import { Copy, Check, Download, FileText, Code2, Loader2 } from 'lucide-vue-next'
+import { downloadDossierPdf } from '@/services/api'
 
 const props = defineProps<{
   markdown: string
   keyword: string
+  analysisId?: string
 }>()
 
 const activeTab = ref<'preview' | 'raw'>('preview')
@@ -34,53 +36,20 @@ const copyToClipboard = async () => {
   }
 }
 
-// Exportação Direta para PDF
+// Exportação Direta via WeasyPrint no Backend (Sem corte de texto nem páginas em branco)
 const exportDirectPdf = async () => {
   if (exporting.value) return
   exporting.value = true
 
   try {
-    const element = document.getElementById('dossier-rendered-view')
-    if (!element) {
-      throw new Error('Elemento não encontrado')
-    }
-
-    // Aplica temporariamente a classe de impressão limpa
-    element.classList.add('pdf-render-mode')
-
-    const opt = {
-      margin: [10, 12, 10, 12],
-      filename: `Dossie_${props.keyword.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        scrollY: 0,
-        scrollX: 0,
-        backgroundColor: '#ffffff'
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-      },
-      pagebreak: {
-        mode: ['css', 'legacy']
-      }
-    }
-
-    // @ts-ignore
-    if (window.html2pdf) {
-      // @ts-ignore
-      await window.html2pdf().set(opt).from(element).save()
+    if (props.analysisId) {
+      await downloadDossierPdf(props.analysisId, props.keyword)
     } else {
       window.print()
     }
-
-    // Remove a classe temporária e restaura o dark mode na tela
-    element.classList.remove('pdf-render-mode')
   } catch (err) {
-    console.error('Erro ao gerar PDF:', err)
+    console.error('Erro ao baixar PDF:', err)
+    window.print()
   } finally {
     exporting.value = false
   }

@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from uuid import UUID
+from slugify import slugify
 
 from app.core.database import get_db
 from app.models import Niche, Analysis, PainPoint, RecommendedFeature, HookCopy, FaqItem, DossierReport
 from app.schemas import AnalysisCreateRequest, AnalysisResponse, DossierResponse
 from app.services.llm_orchestrator import LLMOrchestrator
 from app.services.dossier_compiler import DossierCompiler
+from app.services.pdf_service import PdfService
 
 router = APIRouter(prefix="/analyses", tags=["Analyses"])
 
@@ -184,3 +186,40 @@ async def get_analysis_dossier(analysis_id: UUID, db: AsyncSession = Depends(get
         metadata_info=dossier.metadata_info,
         created_at=dossier.created_at
     )
+
+
+@router.get("/{analysis_id}/pdf")
+async def download_analysis_pdf(analysis_id: UUID, db: AsyncSession = Depends(get_db)):
+    """
+    Gera e faz o download direto do Dossiê em PDF com WeasyPrint (A4 portrait, 20mm 15mm,
+    sem cortes de tabelas nem linhas órfãs/viúvas).
+    """
+    query = (
+        select(DossierReport, Analysis.keyword)
+        .join(Analysis, DossierReport.analysis_id == Analysis.id)
+        .where(DossierReport.analysis_id == analysis_id)
+    )
+    result = await db.execute(query)
+    row = result.first()
+
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dossiê para esta análise não foi encontrado."
+        )
+
+    dossier, keyword = row
+    
+    # Gera os bytes do PDF usando o motor WeasyPrint
+    pdf_bytes = PdfService.generate_pdf_from_markdown(dossier.markdown_content)
+
+    safe_filename = f"Dossie_{slugify(keyword)}.pdf"
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_filename}"'
+        }
+    )
+
