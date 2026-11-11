@@ -74,24 +74,17 @@ class TypstPdfService:
 #set page(
   paper: "a4",
   margin: (top: 20mm, bottom: 20mm, left: 15mm, right: 15mm),
-  header: locate(loc => {{
-    if loc.page() > 1 {{
-      align(right, text(fill: rgb("#64748b"), size: 8pt)[
-        Dossiê Executivo — {kw_title}
-      ])
-    }}
-  }}),
-  footer: locate(loc => {{
-    grid(
+  footer: [
+    #grid(
       columns: (1fr, 1fr),
       align(left, text(fill: rgb("#94a3b8"), size: 8pt)[
         Métrica Social-Media — Documento Técnico Confidencial
       ]),
       align(right, text(fill: rgb("#64748b"), size: 8pt)[
-        Página #loc.page() de #counter(page).final(loc).at(0)
+        #counter(page).display("1 / 1", both: true)
       ])
     )
-  }})
+  ]
 )
 
 #set text(

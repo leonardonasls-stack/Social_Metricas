@@ -215,15 +215,23 @@ async def download_analysis_pdf(analysis_id: UUID, db: AsyncSession = Depends(ge
         )
 
     # Compila o PDF usando o motor nativo em Rust do Typst
-    pdf_bytes = TypstPdfService.generate_pdf(
-        niche_name=analysis.niche.name if analysis.niche else "Geral",
-        keyword=analysis.keyword,
-        sample_size=analysis.sample_size,
-        pain_points=analysis.pain_points,
-        features=analysis.recommended_features,
-        hooks=analysis.hook_copies,
-        faqs=analysis.faq_items
-    )
+    try:
+        pdf_bytes = TypstPdfService.generate_pdf(
+            niche_name=analysis.niche.name if analysis.niche else "Geral",
+            keyword=analysis.keyword,
+            sample_size=analysis.sample_size,
+            pain_points=analysis.pain_points,
+            features=analysis.recommended_features,
+            hooks=analysis.hook_copies,
+            faqs=analysis.faq_items
+        )
+    except Exception as e:
+        import logging
+        logging.error(f"Erro na compilacao Typst: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao compilar PDF: {str(e)}"
+        )
 
     safe_filename = f"Dossie_{slugify(analysis.keyword)}.pdf"
 
