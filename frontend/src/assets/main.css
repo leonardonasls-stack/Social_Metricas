@@ -14,10 +14,11 @@ html, body {
    com quebras de página perfeitas e sem cortes de conteúdo.
    ======================================================== */
 @media print {
-  /* Reseta a página para tamanho A4 padrão com margens limpas */
+  /* Reseta a página para tamanho A4 padrão com margens limpas.
+     margin: 0 remove forçadamente os cabeçalhos/rodapés padrão do navegador (URL e '1 of 3') */
   @page {
     size: A4 portrait;
-    margin: 15mm;
+    margin: 0;
   }
 
   /* Força fundo branco e texto escuro de alto contraste */
@@ -31,27 +32,18 @@ html, body {
     line-height: 1.5 !important;
   }
 
-  /* Oculta estritamente qualquer cabeçalho de navegação, barra ou container de ação */
-  header,
-  nav,
-  .no-print,
-  button,
-  .modal,
-  .drawer {
-    display: none !important;
-  }
-
-  /* Remove o card container e deixa o fluxo do documento solto */
+  /* Aplica o padding interno da folha A4 no container para substituir a margem da página */
   .dossier-card-container {
-    background: transparent !important;
+    padding: 16mm 14mm !important;
+    margin: 0 !important;
+    background: #ffffff !important;
     border: none !important;
     box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
     border-radius: 0 !important;
     backdrop-filter: none !important;
     width: 100% !important;
     max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Garante que o primeiro H1 comece exatamente no topo da folha */
