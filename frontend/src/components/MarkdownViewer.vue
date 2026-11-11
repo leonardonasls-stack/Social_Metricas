@@ -34,121 +34,22 @@ const copyToClipboard = async () => {
   }
 }
 
-// Exportação Direta de PDF via html2pdf com folha de estilos editorial injetada
+// Exportação Direta para PDF
 const exportDirectPdf = async () => {
   if (exporting.value) return
   exporting.value = true
 
   try {
-    // 1. Cria um container temporário anexado ao body (invisível na tela)
-    const printContainer = document.createElement('div')
-    printContainer.id = 'temp-pdf-export-container'
-    printContainer.style.position = 'fixed'
-    printContainer.style.left = '-9999px'
-    printContainer.style.top = '0'
-    printContainer.style.width = '794px' // Largura exata A4 (96 DPI)
-    printContainer.style.backgroundColor = '#ffffff'
-    printContainer.style.color = '#0f172a'
-    printContainer.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    printContainer.style.padding = '0'
-    printContainer.style.margin = '0'
+    const element = document.getElementById('dossier-rendered-view')
+    if (!element) {
+      throw new Error('Elemento não encontrado')
+    }
 
-    // 2. Estilos específicos do documento impresso (tabelas com borda, títulos destacados, citações)
-    const editorialCss = `
-      <style>
-        #temp-pdf-export-container h1 {
-          font-size: 22px !important;
-          font-weight: 800 !important;
-          color: #0f172a !important;
-          border-bottom: 2px solid #e2e8f0 !important;
-          padding-bottom: 8px !important;
-          margin-top: 0 !important;
-          margin-bottom: 12px !important;
-          line-height: 1.3 !important;
-        }
-        #temp-pdf-export-container h2 {
-          font-size: 16px !important;
-          font-weight: 700 !important;
-          color: #1e293b !important;
-          border-bottom: 1px solid #f1f5f9 !important;
-          padding-bottom: 4px !important;
-          margin-top: 22px !important;
-          margin-bottom: 10px !important;
-          page-break-after: avoid;
-        }
-        #temp-pdf-export-container h3 {
-          font-size: 13px !important;
-          font-weight: 600 !important;
-          color: #334155 !important;
-          margin-top: 14px !important;
-          margin-bottom: 6px !important;
-          page-break-after: avoid;
-        }
-        #temp-pdf-export-container h4 {
-          font-size: 12px !important;
-          font-weight: 600 !important;
-          color: #475569 !important;
-          margin-top: 10px !important;
-          margin-bottom: 4px !important;
-        }
-        #temp-pdf-export-container p, 
-        #temp-pdf-export-container li {
-          font-size: 11px !important;
-          color: #334155 !important;
-          line-height: 1.6 !important;
-          margin-bottom: 8px !important;
-        }
-        #temp-pdf-export-container table {
-          width: 100% !important;
-          border-collapse: collapse !important;
-          font-size: 10px !important;
-          margin: 14px 0 !important;
-          page-break-inside: avoid;
-        }
-        #temp-pdf-export-container th {
-          background-color: #f8fafc !important;
-          color: #0f172a !important;
-          font-weight: 700 !important;
-          border: 1px solid #cbd5e1 !important;
-          padding: 6px 8px !important;
-          text-align: left !important;
-        }
-        #temp-pdf-export-container td {
-          border: 1px solid #e2e8f0 !important;
-          color: #1e293b !important;
-          padding: 6px 8px !important;
-        }
-        #temp-pdf-export-container blockquote {
-          border-left: 4px solid #4f46e5 !important;
-          background-color: #f8fafc !important;
-          color: #334155 !important;
-          padding: 8px 12px !important;
-          margin: 10px 0 !important;
-          font-style: italic !important;
-          page-break-inside: avoid;
-        }
-        #temp-pdf-export-container code {
-          background-color: #f1f5f9 !important;
-          color: #1e293b !important;
-          border: 1px solid #e2e8f0 !important;
-          padding: 1px 4px !important;
-          border-radius: 4px !important;
-          font-size: 9.5px !important;
-          font-family: monospace !important;
-        }
-        #temp-pdf-export-container hr {
-          border: 0 !important;
-          border-top: 1px solid #e2e8f0 !important;
-          margin: 16px 0 !important;
-        }
-      </style>
-    `
-
-    printContainer.innerHTML = editorialCss + renderedHtml.value
-    document.body.appendChild(printContainer)
+    // Aplica temporariamente a classe de impressão limpa
+    element.classList.add('pdf-render-mode')
 
     const opt = {
-      margin: [10, 12, 10, 12], // mm: topo, esquerda, baixo, direita
+      margin: [10, 12, 10, 12],
       filename: `Dossie_${props.keyword.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
@@ -171,11 +72,13 @@ const exportDirectPdf = async () => {
     // @ts-ignore
     if (window.html2pdf) {
       // @ts-ignore
-      await window.html2pdf().set(opt).from(printContainer).save()
+      await window.html2pdf().set(opt).from(element).save()
+    } else {
+      window.print()
     }
 
-    // Remove elemento temporário do DOM
-    document.body.removeChild(printContainer)
+    // Remove a classe temporária e restaura o dark mode na tela
+    element.classList.remove('pdf-render-mode')
   } catch (err) {
     console.error('Erro ao gerar PDF:', err)
   } finally {
@@ -253,6 +156,7 @@ const exportDirectPdf = async () => {
     <!-- Conteúdo do Documento no Frontend (Preview Dark Mode) -->
     <div v-show="activeTab === 'preview'" class="mt-6">
       <div
+        id="dossier-rendered-view"
         class="prose prose-invert prose-indigo max-w-none text-slate-100 leading-relaxed space-y-4"
         v-html="renderedHtml"
       ></div>
@@ -308,5 +212,96 @@ const exportDirectPdf = async () => {
 }
 .prose hr {
   @apply border-slate-800 my-6;
+}
+
+/* =======================================================
+   ESTILOS ATIVADOS APENAS NO INSTANTE DA CAPTURA DO PDF
+   (Garante que o html2canvas capture tudo legível com fundo branco)
+   ======================================================= */
+.pdf-render-mode {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  padding: 0 !important;
+}
+
+.pdf-render-mode > h1:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.pdf-render-mode h1 {
+  color: #0f172a !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  font-size: 20pt !important;
+  margin-top: 0 !important;
+  margin-bottom: 12px !important;
+}
+
+.pdf-render-mode h2 {
+  color: #1e293b !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 14pt !important;
+  margin-top: 20px !important;
+  margin-bottom: 8px !important;
+  page-break-after: avoid;
+}
+
+.pdf-render-mode h3 {
+  color: #334155 !important;
+  font-size: 11pt !important;
+  margin-top: 14px !important;
+  margin-bottom: 6px !important;
+  page-break-after: avoid;
+}
+
+.pdf-render-mode p, 
+.pdf-render-mode li {
+  color: #334155 !important;
+  font-size: 10pt !important;
+  line-height: 1.5 !important;
+}
+
+.pdf-render-mode strong {
+  color: #0f172a !important;
+}
+
+.pdf-render-mode table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 9pt !important;
+  margin: 12px 0 !important;
+  page-break-inside: avoid;
+}
+
+.pdf-render-mode th {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 6px 8px !important;
+}
+
+.pdf-render-mode td {
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+  padding: 6px 8px !important;
+}
+
+.pdf-render-mode blockquote {
+  border-left: 4px solid #4f46e5 !important;
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  padding: 8px 12px !important;
+  margin: 8px 0 !important;
+  font-style: italic !important;
+  page-break-inside: avoid;
+}
+
+.pdf-render-mode code {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  font-size: 8.5pt !important;
 }
 </style>
