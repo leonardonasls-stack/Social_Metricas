@@ -15,27 +15,28 @@
 
 Desenvolvedores, fundadores técnicos e agências de software frequentemente constroem aplicações, SaaS e landing pages baseados em suposições, resultando em baixo Product-Market Fit (PMF), propostas de valor genéricas e desperdício de horas de engenharia.
 
-O **Métrica Social-Media** resolve esse gargalo automatizando a pesquisa de mercado através de mineração social e orquestração de Inteligência Artificial. O sistema extrai milhares de comentários, postagens virais e transcrições de concorrentes, sintetizando esses dados em:
+O **Métrica Social-Media** resolve esse gargalo automatizando a pesquisa de mercado através de mineração social em tempo real e orquestração de Inteligência Artificial. O sistema extrai e sintetiza comentários, postagens virais e discussões de clientes reais em:
 
-- **Mapeamento de Dores Reais e Objeções**: Identificação de queixas operacionais com impacto financeiro estimado e citações literais mineradas.
-- **Backlog Priorizado com RICE Score**: Funcionalidades recomendadas com cálculo automático de *Reach*, *Impact*, *Confidence* e *Effort*, acompanhadas de *User Stories* e critérios de aceite no padrão INVEST.
-- **Copywriting de Alta Conversão**: Ganchos emocionais para seções Hero, variações para testes A/B e botões de chamada para ação (CTA).
-- **FAQ Anti-Fricção**: Respostas estratégicas prontas para quebrar objeções críticas antes do checkout.
-- **Dossiê Executivo e Exportação em PDF**: Relatório técnico completo visualizável em Markdown com suporte a diagramas Mermaid e exportação diagramada em alta precisão A4 via motor nativo Typst ou renderização client-side.
-- **Base de Conhecimento Acumulativa em PostgreSQL**: Cache inteligente por nicho e palavra-chave, garantindo tempo de resposta inferior a 100ms para consultas já processadas.
+- **Mapeamento de Dores Reais e Objeções**: Identificação de gargalos operacionais com métricas estatísticas de incidência, estimativa de impacto no negócio e citações literais extraídas de discussões públicas.
+- **Backlog Priorizado com RICE Score**: Funcionalidades recomendadas com cálculo automático de *Reach*, *Impact*, *Confidence* e *Effort*, acompanhadas de *User Stories* e critérios de aceite detalhados no padrão INVEST.
+- **Copywriting de Alta Conversão**: Ganchos emocionais categorizados por intenção (*social proof*, *relief*, *urgency*), variações para testes A/B e posicionamento estratégico de seções.
+- **FAQ Anti-Fricção**: Objeções frequentes mapeadas por nível de fricção (1 a 5) com sugestões de resposta e dicas de posicionamento na página.
+- **Dossiê Executivo e Exportação em PDF**: Relatório técnico completo visualizável em Markdown com diagramas Mermaid e exportação diagramada em alta precisão A4 via motor nativo Typst ou renderização client-side.
+- **Base de Conhecimento Acumulativa em PostgreSQL**: Cache inteligente particionado por nicho, palavra-chave e modo de mineração (*mock* ou *live*), assegurando tempo de resposta inferior a 100ms para consultas já existentes.
 
 ---
 
 ## Arquitetura do Sistema
 
-A solução adota uma arquitetura em monorepo desacoplada, conteinerizada e projetada para alta disponibilidade:
+A solução adota uma arquitetura em monorepo desacoplada, conteinerizada e projetada para alta disponibilidade e resiliência:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                       Frontend (Vue 3)                      │
 │      Vite + TypeScript + Tailwind CSS + Lucide Icons        │
-│   • Dashboard Executivo       • Drawer de Detalhes          │
-│   • Visualizador Markdown     • Exportação Typst/Client PDF │
+│   • Dashboard Analítico       • Drawer de Detalhes          │
+│   • Expansão Rápida de Busca  • Visualizador Markdown       │
+│   • Exportação Typst/Client PDF (Diagramação A4)            │
 └──────────────┬───────────────────────────────▲──────────────┘
                │ HTTP / JSON                   │
                ▼                               │
@@ -44,19 +45,20 @@ A solução adota uma arquitetura em monorepo desacoplada, conteinerizada e proj
 │            Python 3.11 + SQLAlchemy Assíncrono              │
 │   • Router /api/v1/niches     • Router /api/v1/analyses     │
 │   • Compilador de Dossiê      • Serviço Typst & PDF         │
+│   • Pipeline Anti-Alucinação  • Cálculo Determinístico     │
 └──────┬───────────────────────┬───────────────────────┬──────┘
        │                       │                       │
        ▼                       ▼                       ▼
 ┌──────────────┐      ┌─────────────────┐     ┌───────────────┐
 │  PostgreSQL  │      │ ScrapeCreators  │     │   Multi-LLM   │
-│   Cache &    │      │  Social Mining  │     │   Waterfall   │
-│ Persistência │      │  (Mock ou Live) │     │   Failover    │
+│   Cache &    │      │ Social Mining   │     │   Waterfall   │
+│ Persistência │      │ (Reddit/TikTok) │     │   Failover    │
 └──────────────┘      └─────────────────┘     └───────────────┘
 ```
 
 ### Motor Multi-LLM Waterfall (Failover em Cascata)
 
-Para assegurar disponibilidade contínua a custo zero, o orquestrador de IA implementa um padrão de tolerância a falhas em cascata com transição automática:
+Para assegurar disponibilidade contínua sem depender de um único provedor, o orquestrador de IA implementa um padrão de tolerância a falhas em cascata com transição automática:
 
 ```mermaid
 flowchart TD
@@ -64,7 +66,7 @@ flowchart TD
     Step1 -->|Sucesso| Finish([Retorno Estruturado])
     Step1 -->|Falha / Cota Excedida| Step2{Groq Cloud\nopenai/gpt-oss-120b}
     Step2 -->|Sucesso| Finish
-    Step2 -->|Falha / Cota Excedida| Step3{OpenRouter\nnemotron-3.5-lightning:free}
+    Step2 -->|Falha / Cota Excedida| Step3{OpenRouter\nnvidia/nemotron-3.5-lightning:free}
     Step3 -->|Sucesso| Finish
     Step3 -->|Falha / Indisponível| Step4[Fallback Heurístico Local\nRegras Analíticas Offline]
     Step4 --> Finish
@@ -72,6 +74,13 @@ flowchart TD
 
 > [!NOTE]
 > Se nenhuma chave de API estiver configurada ou se todos os provedores remotos esgotarem suas cotas, o **Fallback Heurístico Local** assume a geração instantaneamente, garantindo que o fluxo de trabalho nunca seja interrompido.
+
+### Pipeline Anti-Alucinação e Métricas Determinísticas
+
+Quando executado em modo `live` com a API ScrapeCreators configurada:
+1. **Mineração de Discussões Reais**: O cliente busca postagens e comentários em fóruns e redes sociais (Reddit, TikTok, Instagram, YouTube) expandindo o termo de busca para focar em queixas e atritos operacionais.
+2. **Cálculo Determinístico de Incidência**: As porcentagens de frequência das dores são calculadas matematicamente com base no volume exato de citações literais mineradas sobre o tamanho total da amostra.
+3. **Persistência Completa de Metadados**: O banco armazena as citações de clientes (`sample_comments`), impacto financeiro, critérios de aceite (`acceptance_criteria`) e notas técnicas para auditoria.
 
 ---
 
@@ -82,6 +91,7 @@ Metrica Social-Media/
 ├── docker-compose.yml           # Orquestração dos serviços (db, backend, frontend)
 ├── PRD.md                       # Product Requirements Document
 ├── TRD.md                       # Technical Requirements Document
+├── CHANGELOG.md                 # Histórico cronológico de versões e correções
 ├── .env.example                 # Modelo de variáveis de ambiente
 ├── backend/
 │   ├── Dockerfile
@@ -101,17 +111,17 @@ Metrica Social-Media/
 │           ├── llm_orchestrator.py  # Orquestrador Multi-LLM resiliente
 │           ├── pdf_service.py       # Renderização de PDF via WeasyPrint
 │           ├── typst_service.py     # Compilação diagramada em PDF via Typst
-│           └── scrapecreators/      # Integração de mineração de redes sociais
+│           └── scrapecreators/      # Integração e cliente de mineração social
 └── frontend/
     ├── Dockerfile
     ├── package.json
     ├── tailwind.config.ts
     ├── vite.config.ts
     └── src/
-        ├── App.vue              # Interface principal com métricas e visualizações
+        ├── App.vue              # Dashboard principal com métricas e filtros rápidos
         ├── main.ts              # Inicialização Vue 3
         ├── components/
-        │   ├── DetailDrawer.vue # Painel lateral detalhado de dores e features
+        │   ├── DetailDrawer.vue # Painel lateral detalhado com citações literais
         │   └── MarkdownViewer.vue # Visualizador de dossiê com exportação PDF
         ├── services/
         │   └── api.ts           # Cliente HTTP Axios tipado
@@ -165,7 +175,7 @@ GROQ_MODEL=openai/gpt-oss-120b
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 OPENROUTER_MODEL=nvidia/nemotron-3.5-lightning:free
 
-# ScrapeCreators (Necessário apenas para modo 'live')
+# ScrapeCreators (Necessário apenas para mineração real em modo 'live')
 SCRAPECREATORS_API_KEY=
 SCRAPECREATORS_BASE_URL=https://api.scrapecreators.com
 
@@ -242,7 +252,7 @@ Acesse a interface em: `http://localhost:5173`.
 - `POST /api/v1/niches`: Registra um novo nicho no sistema.
 
 ### Análises (`/api/v1/analyses`)
-- `POST /api/v1/analyses`: Executa uma nova pesquisa ou recupera a análise em cache caso já exista para o nicho e palavra-chave informados.
+- `POST /api/v1/analyses`: Executa uma nova pesquisa ou recupera a análise em cache caso já exista para o nicho, palavra-chave e modo informados.
   - Parâmetros: `niche_id`, `keyword`, `sources`, `force_refresh`, `mode`.
 - `GET /api/v1/analyses/{analysis_id}/dossier`: Retorna o Dossiê Executivo completo formatado em Markdown.
 - `GET /api/v1/analyses/{analysis_id}/pdf`: Gera e realiza o download do documento técnico em PDF de alta resolução diagramado via Typst.
@@ -253,6 +263,5 @@ Acesse a interface em: `http://localhost:5173`.
 
 A plataforma oferece dois métodos complementares de exportação do relatório técnico:
 
-1. **PDF de Alta Precisão Tipográfica (Typst Engine):** Compilado no backend usando a linguagem tipográfica moderna [Typst](https://typst.app), gerando documentos A4 com diagramação editorial profissional, cabeçalhos, rodapés e paginação automatizada.
+1. **PDF de Alta Precisão Tipográfica (Typst Engine):** Compilado no backend usando a linguagem tipográfica moderna [Typst](https://typst.app), gerando documentos A4 com diagramação editorial profissional, cabeçalhos, rodapés, paginação contextualizada e tabela RICE documentada.
 2. **Impressão Client-Side (HTML / Canvas):** Renderizado no navegador via `html2pdf.js` para download instantâneo sem sobrecarga de rede.
-
