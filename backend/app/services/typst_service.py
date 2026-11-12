@@ -72,6 +72,8 @@ class TypstPdfService:
             s.replace("\\", "\\\\")
             .replace("[", "\\[")
             .replace("]", "\\]")
+            .replace("<", "\\<")
+            .replace(">", "\\>")
             .replace("#", "\\#")
             .replace("$", "\\$")
             .replace("@", "\\@")
