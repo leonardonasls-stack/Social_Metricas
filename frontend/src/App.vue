@@ -22,7 +22,7 @@ import DetailDrawer from '@/components/DetailDrawer.vue'
 
 const niches = ref<Niche[]>([])
 const selectedNicheId = ref<string>('')
-const keyword = ref<string>('sistema de ordem de serviço')
+const keyword = ref<string>('')
 const forceRefresh = ref<boolean>(false)
 const mode = ref<string>('live')
 const selectedSources = ref<string[]>(['reddit', 'tiktok', 'instagram', 'youtube'])

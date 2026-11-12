@@ -445,11 +445,6 @@ class LLMOrchestrator:
                 ]
             }
 
-        # Segmento 2: Turismo & Lazer (Quadriciclo, Lanchas, etc)
-        elif any(term in kw for term in ["quadriciclo", "passeio", "trilha", "turismo", "aventura", "buggy"]):
-            from app.services.scrapecreators.mock_miner import MockMiner
-            return MockMiner.generate_mock_analysis(keyword, ["reddit", "tiktok", "instagram"])
-
         # Padrão Contextual Geral de Negócios / SaaS
         return {
             "sample_size": 150,
