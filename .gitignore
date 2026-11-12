@@ -52,3 +52,8 @@ postgres_data/
 *.swp
 *.swo
 .DS_Store
+
+# Arquivos de documentação
+digest.md
+DIGEST.md
+digest.txt
