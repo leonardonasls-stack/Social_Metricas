@@ -31,6 +31,9 @@ class PainPointSchema(BaseModel):
     description: Optional[str] = None
     frequency_percentage: float
     severity: str
+    sample_comments: Optional[List[str]] = []
+    financial_impact: Optional[str] = None
+    competitors_affected: Optional[List[str]] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -43,6 +46,10 @@ class RecommendedFeatureSchema(BaseModel):
     confidence: int
     effort: int
     rice_score: float
+    user_story: Optional[str] = None
+    acceptance_criteria: Optional[List[str]] = []
+    effort_breakdown: Optional[str] = None
+    technical_notes: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -51,6 +58,8 @@ class HookCopySchema(BaseModel):
     placement: str
     hook_text: str
     intent: str
+    variations: Optional[List[str]] = []
+    page_position: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,6 +68,7 @@ class FaqItemSchema(BaseModel):
     question: str
     answer_suggestion: str
     friction_level: int
+    placement_tip: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

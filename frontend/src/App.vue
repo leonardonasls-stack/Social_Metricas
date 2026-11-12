@@ -192,10 +192,35 @@ const copyText = async (text: string) => {
               <input
                 v-model="keyword"
                 @keyup.enter="handleSearch"
-                placeholder="Ex: sistema de ordem de serviço, passeio de quadriciclo, clínica de estética"
+                placeholder="Ex: software de agendamento clinica, ordem de servico oficina, plataforma cursos"
                 class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-500"
               />
               <Search class="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+            </div>
+            <!-- Sugestões de Expansão Rápida -->
+            <div class="flex flex-wrap items-center gap-1.5 mt-2">
+              <span class="text-[11px] text-slate-400">Dica: Adicione intenção de atrito:</span>
+              <button
+                type="button"
+                @click="keyword = (keyword.trim() + ' problemas reclamacoes').trim()"
+                class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              >
+                + problemas
+              </button>
+              <button
+                type="button"
+                @click="keyword = (keyword.trim() + ' por que cancelei').trim()"
+                class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              >
+                + cancelamento
+              </button>
+              <button
+                type="button"
+                @click="keyword = (keyword.trim() + ' desvantagens ruim').trim()"
+                class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              >
+                + desvantagens
+              </button>
             </div>
           </div>
         </div>

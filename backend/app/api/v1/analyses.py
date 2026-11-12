@@ -76,7 +76,11 @@ async def create_or_get_analysis(
     if payload.mode == "live":
         miner = ScrapeCreatorsClient()
         if miner.is_configured():
-            mined_comments = await miner.mine_social_discussions(keyword_clean, max_interactions=50)
+            mined_comments = await miner.mine_social_discussions(
+                keyword=keyword_clean,
+                niche_name=niche.name,
+                max_interactions=50
+            )
 
     # 4. Executa Orquestrador Multi-LLM com Failover enriquecido com dados minerados
     raw_data = await LLMOrchestrator.synthesize(
@@ -109,7 +113,10 @@ async def create_or_get_analysis(
             title=p.get("title", ""),
             description=p.get("description", ""),
             frequency_percentage=float(p.get("frequency_percentage", 0.0)),
-            severity=p.get("severity", "medium")
+            severity=p.get("severity", "medium"),
+            sample_comments=p.get("sample_comments", []),
+            financial_impact=p.get("financial_impact"),
+            competitors_affected=p.get("competitors_affected", [])
         ))
 
     features_data = raw_data.get("recommended_features") or raw_data.get("features") or []
@@ -122,7 +129,11 @@ async def create_or_get_analysis(
             impact=int(f.get("impact", 5)),
             confidence=int(f.get("confidence", 5)),
             effort=int(f.get("effort", 5)),
-            rice_score=float(f.get("rice_score", 0.0))
+            rice_score=float(f.get("rice_score", 0.0)),
+            user_story=f.get("user_story"),
+            acceptance_criteria=f.get("acceptance_criteria", []),
+            effort_breakdown=f.get("effort_breakdown"),
+            technical_notes=f.get("technical_notes")
         ))
 
     hooks_data = raw_data.get("hook_copies") or raw_data.get("hooks") or []
@@ -131,7 +142,9 @@ async def create_or_get_analysis(
             analysis_id=new_analysis.id,
             placement=h.get("placement", "hero_headline"),
             hook_text=h.get("hook_text", ""),
-            intent=h.get("intent", "social_proof")
+            intent=h.get("intent", "social_proof"),
+            variations=h.get("variations", []),
+            page_position=h.get("page_position")
         ))
 
     faqs_data = raw_data.get("faq_items") or raw_data.get("faqs") or []
@@ -140,7 +153,8 @@ async def create_or_get_analysis(
             analysis_id=new_analysis.id,
             question=faq.get("question", ""),
             answer_suggestion=faq.get("answer_suggestion", ""),
-            friction_level=int(faq.get("friction_level", 3))
+            friction_level=int(faq.get("friction_level", 3)),
+            placement_tip=faq.get("placement_tip")
         ))
 
     # Gera e compila Dossiê em Markdown

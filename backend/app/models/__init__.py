@@ -48,6 +48,9 @@ class PainPoint(Base):
     description = Column(Text, nullable=True)
     frequency_percentage = Column(Float, default=0.0, nullable=False)
     severity = Column(String(50), default="medium", nullable=False)
+    sample_comments = Column(JSON, default=list, nullable=True)
+    financial_impact = Column(Text, nullable=True)
+    competitors_affected = Column(JSON, default=list, nullable=True)
 
     analysis = relationship("Analysis", back_populates="pain_points")
 
@@ -64,6 +67,10 @@ class RecommendedFeature(Base):
     confidence = Column(Integer, default=5, nullable=False)
     effort = Column(Integer, default=5, nullable=False)
     rice_score = Column(Float, default=0.0, nullable=False)
+    user_story = Column(Text, nullable=True)
+    acceptance_criteria = Column(JSON, default=list, nullable=True)
+    effort_breakdown = Column(Text, nullable=True)
+    technical_notes = Column(Text, nullable=True)
 
     analysis = relationship("Analysis", back_populates="recommended_features")
 
@@ -76,6 +83,8 @@ class HookCopy(Base):
     placement = Column(String(100), nullable=False)
     hook_text = Column(Text, nullable=False)
     intent = Column(String(100), default="social_proof", nullable=False)
+    variations = Column(JSON, default=list, nullable=True)
+    page_position = Column(String(100), nullable=True)
 
     analysis = relationship("Analysis", back_populates="hook_copies")
 
@@ -88,6 +97,7 @@ class FaqItem(Base):
     question = Column(Text, nullable=False)
     answer_suggestion = Column(Text, nullable=False)
     friction_level = Column(Integer, default=3, nullable=False)
+    placement_tip = Column(String(255), nullable=True)
 
     analysis = relationship("Analysis", back_populates="faq_items")
 
