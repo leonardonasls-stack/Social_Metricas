@@ -5,6 +5,15 @@ from typing import Dict, Any, List
 from datetime import datetime
 
 
+def _get_val(obj: Any, key: str, default: Any = "") -> Any:
+    """Extrai valor com segurança seja o objeto um modelo SQLAlchemy ou um dicionário."""
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
 class TypstPdfService:
     """
     Geração Nativa e Ultrarrápida de PDF no Backend usando Typst.
@@ -36,7 +45,6 @@ class TypstPdfService:
             faqs=faqs
         )
         
-        # Cria arquivo temporário seguro para compilação garantida
         with tempfile.NamedTemporaryFile(suffix=".typ", mode="w", encoding="utf-8", delete=False) as tmp_in:
             tmp_in.write(typ_code)
             tmp_in_path = tmp_in.name
@@ -60,7 +68,6 @@ class TypstPdfService:
         if text is None:
             return ""
         s = str(text)
-        # Substitui caracteres que quebram o parser do Typst fora de strings
         return (
             s.replace("\\", "\\\\")
             .replace("[", "\\[")
@@ -101,7 +108,7 @@ class TypstPdfService:
         Métrica Social-Media — Documento Técnico Confidencial
       ]),
       align(right, text(fill: rgb("#64748b"), size: 8pt)[
-        #counter(page).display()
+        #context counter(page).display("1 / 1", both: true)
       ])
     )
   ]
@@ -150,12 +157,12 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
 
         # Itera sobre Dores com Blocos Inquebráveis
         for idx, p in enumerate(pain_points, 1):
-            title = cls._escape(getattr(p, "title", str(p.get("title", ""))))
-            category = cls._escape(getattr(p, "category", str(p.get("category", "Geral"))))
-            desc = cls._escape(getattr(p, "description", str(p.get("description", ""))))
-            severity = str(getattr(p, "severity", p.get("severity", "medium"))).upper()
-            freq = getattr(p, "frequency_percentage", p.get("frequency_percentage", 0))
-            fin_impact = cls._escape(getattr(p, "financial_impact", p.get("financial_impact", "")))
+            title = cls._escape(_get_val(p, "title", ""))
+            category = cls._escape(_get_val(p, "category", "Geral"))
+            desc = cls._escape(_get_val(p, "description", ""))
+            severity = str(_get_val(p, "severity", "medium")).upper()
+            freq = _get_val(p, "frequency_percentage", 0)
+            fin_impact = cls._escape(_get_val(p, "financial_impact", ""))
 
             doc.append(f"""
 #block(breakable: false)[
@@ -168,7 +175,7 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
             if fin_impact and fin_impact != "None":
                 doc.append(f"  - *⚠️ Impacto Financeiro na Operação:* _{fin_impact}_\n")
 
-            comments = getattr(p, "sample_comments", p.get("sample_comments", [])) or []
+            comments = _get_val(p, "sample_comments", []) or []
             if comments:
                 doc.append("  #v(1mm)\n  *Depoimentos Reais Minerados (A Voz do Cliente):*\n")
                 for c in comments:
@@ -200,13 +207,13 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
   [#text(weight: "bold", fill: rgb("#059669"))[RICE]],
 """)
         for idx, f in enumerate(features, 1):
-            f_title = cls._escape(getattr(f, "title", str(f.get("title", ""))))
-            f_rat = cls._escape(getattr(f, "rationale", str(f.get("rationale", ""))))
-            r = getattr(f, "reach", f.get("reach", 5))
-            i = getattr(f, "impact", f.get("impact", 5))
-            c = getattr(f, "confidence", f.get("confidence", 5))
-            e = getattr(f, "effort", f.get("effort", 5))
-            score = getattr(f, "rice_score", f.get("rice_score", 0))
+            f_title = cls._escape(_get_val(f, "title", ""))
+            f_rat = cls._escape(_get_val(f, "rationale", ""))
+            r = _get_val(f, "reach", 5)
+            i = _get_val(f, "impact", 5)
+            c = _get_val(f, "confidence", 5)
+            e = _get_val(f, "effort", 5)
+            score = _get_val(f, "rice_score", 0)
             doc.append(f"  [#{idx}], [{f_title}], [{f_rat}], [{r}], [{i}], [{c}], [{e}], [*#{score}*],\n")
         doc.append(")\n\n#v(1mm)\n_Fórmula RICE:_ $(R times I times C) / E$\n")
 
@@ -216,11 +223,11 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
 == 3.1 Especificação de Engenharia das Features
 """)
         for idx, f in enumerate(features, 1):
-            f_title = cls._escape(getattr(f, "title", str(f.get("title", ""))))
-            u_story = cls._escape(getattr(f, "user_story", f.get("user_story", "")))
-            e_break = cls._escape(getattr(f, "effort_breakdown", f.get("effort_breakdown", "")))
-            t_notes = cls._escape(getattr(f, "technical_notes", f.get("technical_notes", "")))
-            crits = getattr(f, "acceptance_criteria", f.get("acceptance_criteria", [])) or []
+            f_title = cls._escape(_get_val(f, "title", ""))
+            u_story = cls._escape(_get_val(f, "user_story", ""))
+            e_break = cls._escape(_get_val(f, "effort_breakdown", ""))
+            t_notes = cls._escape(_get_val(f, "technical_notes", ""))
+            crits = _get_val(f, "acceptance_criteria", []) or []
 
             doc.append(f"""
 #block(breakable: false)[
@@ -250,9 +257,9 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
 Sugestões de redação testadas contra as maiores objeções do público-alvo:
 """)
         for h in hooks:
-            place = cls._escape(getattr(h, "placement", h.get("placement", "")))
-            intent = cls._escape(getattr(h, "intent", h.get("intent", "")))
-            text_h = cls._escape(getattr(h, "hook_text", h.get("hook_text", "")))
+            place = cls._escape(_get_val(h, "placement", ""))
+            intent = cls._escape(_get_val(h, "intent", ""))
+            text_h = cls._escape(_get_val(h, "hook_text", ""))
             doc.append(f"""
 #block(breakable: false)[
   - *Posicionamento (`{place}` | Intenção: `{intent}`):*
@@ -266,9 +273,9 @@ Sugestões de redação testadas contra as maiores objeções do público-alvo:
 == 5. FAQ Anti-Fricção (Eliminação de Dúvidas Críticas)
 """)
         for idx, faq in enumerate(faqs, 1):
-            q = cls._escape(getattr(faq, "question", faq.get("question", "")))
-            a = cls._escape(getattr(faq, "answer_suggestion", faq.get("answer_suggestion", "")))
-            fric = getattr(faq, "friction_level", faq.get("friction_level", 3))
+            q = cls._escape(_get_val(faq, "question", ""))
+            a = cls._escape(_get_val(faq, "answer_suggestion", ""))
+            fric = _get_val(faq, "friction_level", 3)
             doc.append(f"""
 #block(breakable: false)[
   *P{idx}: {q}* (Fricção: `{fric}/5`)\n
