@@ -255,3 +255,4 @@ A plataforma oferece dois métodos complementares de exportação do relatório 
 
 1. **PDF de Alta Precisão Tipográfica (Typst Engine):** Compilado no backend usando a linguagem tipográfica moderna [Typst](https://typst.app), gerando documentos A4 com diagramação editorial profissional, cabeçalhos, rodapés e paginação automatizada.
 2. **Impressão Client-Side (HTML / Canvas):** Renderizado no navegador via `html2pdf.js` para download instantâneo sem sobrecarga de rede.
+
