@@ -32,11 +32,11 @@ class DossierCompiler:
             sev = p.get("severity", "medium").upper()
             freq = p.get("frequency_percentage", 0)
             md.append(f"### 2.{idx} [{p.get('category', 'Geral')}] {p.get('title', '')}")
-            md.append(f"- **Incidência Estimada:** `{freq}% das menções`  |  **Severidade:** `{sev}`")
+            md.append(f"- **Incidência Mapeada:** `{freq}% das discussões qualificadas`  |  **Severidade:** `{sev}`")
             md.append(f"- **Diagnóstico Operacional:** {p.get('description', '')}")
             
             if p.get("financial_impact"):
-                md.append(f"- **⚠️ Impacto Financeiro na Operação:** *{p.get('financial_impact')}*")
+                md.append(f"- **⚠️ Impacto Operacional & Negócio:** *{p.get('financial_impact')}*")
                 
             if p.get("competitors_affected"):
                 comps = ", ".join(p.get("competitors_affected", []))
@@ -49,12 +49,12 @@ class DossierCompiler:
             md.append("\n")
             
         # 3. Matriz de Features com RICE Score e Especificação Técnica
-        md.append("## 3. Matriz de Features com RICE Score (Priorização de Backlog)")
-        md.append("| Ranking | Funcionalidade Proposta | Justificativa de Engenharia | R | I | C | E | RICE Score |")
+        md.append("## 3. Matriz de Features com RICE Score* (Priorização de Backlog)")
+        md.append("| Ranking | Funcionalidade Proposta | Justificativa de Engenharia | R | I | C | E | RICE Score* |")
         md.append("| :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: |")
         for idx, f in enumerate(data.get("recommended_features", []), 1):
             md.append(f"| #{idx} | **{f.get('title', '')}** | {f.get('rationale', '')} | {f.get('reach', 5)} | {f.get('impact', 5)} | {f.get('confidence', 5)} | {f.get('effort', 5)} | **{f.get('rice_score', 0)}** |")
-        md.append("\n> **Fórmula RICE:** $\\text{Score} = (\\text{Reach} \\times \\text{Impact} \\times \\text{Confidence}) / \\text{Effort}$\n")
+        md.append("\n<small>\\* **RICE Score:** Framework de priorização de produto criado pela Intercom. A pontuação é calculada pela fórmula $\\text{Score} = (R \\times I \\times C) / E$, onde **R** (Reach/Alcance: usuários impactados no período), **I** (Impact/Impacto na experiência: 1 a 10), **C** (Confidence/Confiança técnica: 1 a 10) e **E** (Effort/Esforço de desenvolvimento: 1 a 10). Quanto maior o score, maior o retorno sobre investimento (ROI).</small>\n")
 
         # 3.1 Especificação Detalhada das Features de Maior Impacto
         md.append("### 3.1 Especificação de Engenharia das Features (User Stories & Critérios de Aceite)\n")

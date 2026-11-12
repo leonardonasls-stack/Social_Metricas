@@ -171,11 +171,11 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
   #v(2mm)
   === 2.{idx} [{category}] {title}
   #v(1mm)
-  - *Incidência Estimada:* `{freq}% das menções` | *Severidade:* `{severity}`
+  - *Incidência Mapeada:* `{freq}% das discussões qualificadas` | *Severidade:* `{severity}`
   - *Diagnóstico Operacional:* {desc}
 """)
             if fin_impact and fin_impact != "None":
-                doc.append(f"  - *⚠️ Impacto Financeiro na Operação:* _{fin_impact}_\n")
+                doc.append(f"  - *⚠️ Impacto Operacional & Negócio:* _{fin_impact}_\n")
 
             comments = _get_val(p, "sample_comments", []) or []
             if comments:
@@ -192,7 +192,7 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
         # 3. Matriz RICE
         doc.append("""
 #v(3mm)
-== 3. Matriz de Features com RICE Score (Priorização de Backlog)
+== 3. Matriz de Features com RICE Score\\* (Priorização de Backlog)
 
 #table(
   columns: (28pt, 1fr, 1.3fr, 22pt, 22pt, 22pt, 22pt, 40pt),
@@ -206,7 +206,7 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
   [#text(weight: "bold")[I]],
   [#text(weight: "bold")[C]],
   [#text(weight: "bold")[E]],
-  [#text(weight: "bold", fill: rgb("#059669"))[RICE]],
+  [#text(weight: "bold", fill: rgb("#059669"))[RICE\\*]],
 """)
         for idx, f in enumerate(features, 1):
             f_title = cls._escape(_get_val(f, "title", ""))
@@ -217,7 +217,14 @@ Diagnóstico aprofundado das principais fricções que geram perda de faturament
             e = _get_val(f, "effort", 5)
             score = _get_val(f, "rice_score", 0)
             doc.append(f"  [#{idx}], [{f_title}], [{f_rat}], [{r}], [{i}], [{c}], [{e}], [*#{score}*],\n")
-        doc.append(")\n\n#v(1mm)\n_Fórmula RICE:_ $(R times I times C) / E$\n")
+        doc.append("""
+)
+
+#v(1mm)
+#text(size: 7.5pt, fill: rgb("#64748b"))[
+  \\* *RICE Score:* Framework de priorização de produto criado pela Intercom. A pontuação é calculada pela fórmula $(R times I times C) / E$, onde *R* (Reach/Alcance: clientes impactados no período), *I* (Impact/Impacto no usuário: 1 a 10), *C* (Confidence/Confiança técnica: 1 a 10) e *E* (Effort/Esforço de desenvolvimento: 1 a 10). Quanto maior o score, maior o ROI da entrega.
+]
+""")
 
         # 3.1 Especificação de Engenharia das Features
         doc.append("""

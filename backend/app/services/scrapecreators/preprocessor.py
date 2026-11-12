@@ -32,18 +32,37 @@ class MiningPreprocessor:
     """
 
     @classmethod
+    def clean_search_term(cls, raw_keyword: str) -> str:
+        """
+        Remove stop-words repetitivas e cauda longa artificial de palavras-chave.
+        Ex: 'Agendamento De Tarefas Problemas Reclamacoes Por Que Cancelei Desvantagens Ruim'
+            -> 'Agendamento De Tarefas'
+        """
+        stopwords = [
+            "problemas", "problema", "reclamacoes", "reclamacao", "por que cancelei",
+            "por que", "cancelei", "desvantagens", "desvantagem", "ruim", "reclame aqui",
+            "motivos para cancelar", "nao funciona", "falha"
+        ]
+        text = raw_keyword.strip()
+        lower_text = text.lower()
+        for sw in stopwords:
+            # Substitui termos periféricos preservando o núcleo da pesquisa
+            lower_text = lower_text.replace(sw, " ")
+        cleaned = " ".join(lower_text.split())
+        return cleaned.title() if len(cleaned) >= 3 else raw_keyword.strip()
+
+    @classmethod
     def expand_queries(cls, base_keyword: str, niche_name: Optional[str] = None, max_queries: int = 3) -> List[str]:
         """
-        Gera variações de busca focadas em dor e problemas operacionais.
-        Ex: 'software clinica' -> ['software clinica', 'software clinica problema reclamacao', 'software clinica cancelar']
+        Gera variações de busca focadas em dor e problemas operacionais a partir do termo limpo.
         """
-        clean_keyword = base_keyword.strip()
+        clean_keyword = cls.clean_search_term(base_keyword)
         queries = [clean_keyword]
 
-        # Variação 1: Focada em problemas e reclamações
+        # Variação 1: Focada em queixas e atritos
         queries.append(f"{clean_keyword} problema reclamacao")
 
-        # Variação 2: Focada em custo, cancelamento ou perda de tempo
+        # Variação 2: Focada em cancelamento e frustração
         queries.append(f"{clean_keyword} cancelar dor de cabeca")
 
         return queries[:max_queries]

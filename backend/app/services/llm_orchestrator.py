@@ -6,50 +6,55 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Você é um especialista em Product Management, Engenharia de Software e Copywriting de Alta Conversão.
-Sua missão é analisar um nicho/termo pesquisado por um desenvolvedor e entregar um diagnóstico de produto CIRÚRGICO e PROFUNDO, como se tivesse minerado centenas de discussões no Reddit, TikTok, Instagram e YouTube.
+SYSTEM_PROMPT = """Você é um especialista sênior em Inteligência de Produto (Product Discovery), Engenharia de Software e Copywriting de Alta Conversão.
+Sua missão é sintetizar estritamente os fatos e dados minerados de discussões públicas reais (Reddit, YouTube, TikTok, Reclame Aqui) sobre o nicho/termo pesquisado.
 
-IMPORTANTE:
-- NUNCA dê respostas genéricas.
-- Analise a dor REAL operacional do segmento.
-- Para cada dor, inclua exemplos literais de comentários que clientes dizem na internet (sample_comments) e impacto financeiro.
-- Para cada feature, inclua a história de usuário (user_story), critérios de aceite (acceptance_criteria) e justificativa da nota de esforço.
-- Retorne EXCLUSIVAMENTE um objeto JSON válido (sem tags markdown de código como ```json, apenas o JSON puro).
+DIRETRIZES ANTI-ALUCINAÇÃO E RIGOR FACTUAL (CRÍTICO):
+1. ZERO INVENÇÃO DE COMENTÁRIOS:
+   - Se houver comentários minerados fornecidos, os 'sample_comments' DEVEM ser citações literais extraídas EXCLUSIVAMENTE da lista fornecida, preservando o formato de atribuição '[origem | @autor]: "texto"'.
+   - NUNCA invente depoimentos falsos ou frases de marketing disfarçadas de depoimento.
+2. ZERO INVENÇÃO DE CONTAS FINANCEIRAS FICTÍCIAS:
+   - No campo 'financial_impact', descreva o mecanismo do impacto operacional (ex: 'Gera perda de clientes por abandono no checkout' ou 'Horas da equipe gastas reprocessando pedidos manualmente').
+   - Não invente cálculos artificiais como '70 chamados x 6h x R$ 107/h' a não ser que os comentários citem valores explicitamente.
+3. RELEVÂNCIA TEMÁTICA ESTREITA:
+   - Mantenha foco exclusivo no problema real do usuário final do produto/serviço no nicho indicado.
+   - Ignore discussões irrelevantes ou fora do escopo que tenham aparecido por ambiguidade de palavras-chave.
+4. COBERTURA COMPLETA:
+   - Sempre gere as 4 dores principais, 4 features detalhadas, 3 hooks e 4 perguntas frequentes (FAQs) completas.
+   - Retorne EXCLUSIVAMENTE um objeto JSON válido (sem tags markdown ```json, apenas o JSON puro).
 
 Formato do JSON exigido:
 {
-  "sample_size": 180,
   "pain_points": [
     {
       "category": "Operacional | Financeiro | Atendimento | Segurança",
       "title": "Título conciso da dor",
-      "description": "Explicação detalhada da queixa comum",
-      "frequency_percentage": 38.5,
+      "description": "Explicação detalhada da fricção operacional observada",
       "severity": "critical | high | medium | low",
       "sample_comments": [
-        "Comentário literal 1 minerado de redes sociais...",
-        "Comentário literal 2 demonstrando a frustração..."
+        "[Reddit | @usuario]: Citação literal minerada...",
+        "[YouTube | @usuario]: Citação literal minerada..."
       ],
-      "financial_impact": "Estimativa do prejuízo financeiro ou perda de vendas causada por essa dor",
-      "competitors_affected": ["Concorrente A", "Concorrente B"]
+      "financial_impact": "Impacto na operação ou no faturamento explicado qualitativamente",
+      "competitors_affected": ["Ferramenta ou concorrente citado se houver"]
     }
   ],
   "recommended_features": [
     {
       "title": "Nome da funcionalidade técnica",
-      "rationale": "Por que essa feature resolve a dor acima",
-      "reach": 9,
-      "impact": 8,
-      "confidence": 9,
+      "rationale": "Como essa feature resolve pontualmente a dor mapeada",
+      "reach": 8,
+      "impact": 7,
+      "confidence": 8,
       "effort": 3,
-      "rice_score": 216.0,
+      "rice_score": 149.3,
       "user_story": "Como [persona], eu quero [ação], para que [benefício].",
       "acceptance_criteria": [
         "Critério de aceite 1...",
         "Critério de aceite 2..."
       ],
-      "effort_breakdown": "Por que a nota de esforço foi X (ex: 2 semanas de dev frontend + backend)",
-      "technical_notes": "Sugestão técnica (ex: WebSocket, API WhatsApp, fila Redis)"
+      "effort_breakdown": "Estimativa realista de esforço técnico de desenvolvimento",
+      "technical_notes": "Diretriz arquitetural (ex: Webhook, Fila Redis, Idempotência)"
     }
   ],
   "hook_copies": [
@@ -58,18 +63,18 @@ Formato do JSON exigido:
       "hook_text": "Frase de alto impacto emocional e conversão",
       "intent": "relief | urgency | social_proof",
       "variations": [
-        "Variação 1 (Foco em economia)",
-        "Variação 2 (Foco em agilidade)"
+        "Variação 1 (Foco em segurança/alívio)",
+        "Variação 2 (Foco em agilidade/lucro)"
       ],
       "page_position": "Acima da dobra (Hero Section)"
     }
   ],
   "faq_items": [
     {
-      "question": "Dúvida real mais frequente que trava a compra",
-      "answer_suggestion": "Resposta ideal e convincente para a landing page",
-      "friction_level": 5,
-      "placement_tip": "Colocar logo antes do botão de pagamento/checkout"
+      "question": "Dúvida real mais frequente identificada nas discussões",
+      "answer_suggestion": "Resposta ideal e convincente para a landing page que elimina a objeção",
+      "friction_level": 4,
+      "placement_tip": "Inserir próximo à seção de planos/preços ou formulário de cadastro"
     }
   ]
 }
@@ -91,18 +96,22 @@ class LLMOrchestrator:
         comments_context = ""
         if mined_comments and len(mined_comments) > 0:
             formatted_quotes = []
-            for item in mined_comments[:30]:
-                formatted_quotes.append(f"- [{item.get('source', 'social')} | @{item.get('author', 'user')}]: \"{item.get('content')}\"")
+            for idx, item in enumerate(mined_comments[:35], 1):
+                src = item.get("source", "social")
+                auth = item.get("author", "user")
+                cnt = item.get("content", "").replace("\n", " ").strip()
+                formatted_quotes.append(f"[{idx}] [{src} | @{auth}]: \"{cnt}\"")
             comments_context = (
-                "\n\n--- DADOS REAIS MINERADOS DAS REDES SOCIAIS (ScrapeCreators) ---\n"
+                f"\n\n--- FORAM MINERADOS {len(mined_comments)} COMENTÁRIOS E DISCUSSÕES PÚBLICAS REAIS ---\n"
                 + "\n".join(formatted_quotes)
                 + "\n--- FIM DOS DADOS MINERADOS ---\n"
-                + "INSTRUÇÃO CRUCIAL: Baseie suas dores, severidades, termos e citações de sample_comments estritamente nas discussões reais mineradas acima."
+                + "INSTRUÇÃO OBRIGATÓRIA: Identifique os problemas agrupando os comentários acima. Em 'sample_comments', copie EXATAMENTE a citação formatada '[origem | @autor]: \"...\"' que comprova a dor. Não invente textos."
             )
 
         user_message = (
-            f"Analise o termo: '{keyword}' no nicho: '{niche_name}'. "
-            f"Identifique as 4 maiores dores reais, 4 features detalhadas com RICE Score, 3 hooks com variações e 4 FAQs anti-objeção."
+            f"Analise o termo: '{keyword}' no nicho: '{niche_name}'.\n"
+            f"Sintetize as 4 maiores dores reais fundamentadas na pesquisa, 4 features técnicas com RICE Score, 3 hooks e 4 FAQs completas.\n"
+            f"OBRIGATÓRIO: O array 'faq_items' DEVE conter 4 perguntas e respostas detalhadas. Não omita nem deixe vazio.\n"
             f"{comments_context}"
         )
 

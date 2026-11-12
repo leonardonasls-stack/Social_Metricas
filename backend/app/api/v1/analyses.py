@@ -35,11 +35,17 @@ async def create_or_get_analysis(
 
     keyword_clean = payload.keyword.strip()
 
-    # 2. Verifica Cache no PostgreSQL
+    requested_mode = payload.mode or "mock"
+
+    # 2. Verifica Cache no PostgreSQL (respeitando o modo solicitado)
     if not payload.force_refresh:
         query = (
             select(Analysis)
-            .where(Analysis.niche_id == payload.niche_id, Analysis.keyword.ilike(keyword_clean))
+            .where(
+                Analysis.niche_id == payload.niche_id,
+                Analysis.keyword.ilike(keyword_clean),
+                Analysis.mode == requested_mode
+            )
             .options(
                 selectinload(Analysis.pain_points),
                 selectinload(Analysis.recommended_features),
@@ -89,9 +95,12 @@ async def create_or_get_analysis(
         mined_comments=mined_comments
     )
 
-    sample_size = raw_data.get("sample_size", 100)
-    if mined_comments:
-        sample_size = max(sample_size, len(mined_comments) * 3)
+    # 4.1 Amostra e métricas determinísticas e reais
+    total_mined = len(mined_comments)
+    if total_mined > 0:
+        sample_size = total_mined
+    else:
+        sample_size = raw_data.get("sample_size", 40)
 
     # 5. Grava Nova Análise no PostgreSQL
     new_analysis = Analysis(
@@ -104,17 +113,28 @@ async def create_or_get_analysis(
     db.add(new_analysis)
     await db.flush()  # Obtém ID da análise
 
-    # Adiciona itens relacionais com extração resiliente de chaves
+    # Adiciona itens relacionais com contagem estatística real de citações
     pain_points_data = raw_data.get("pain_points") or raw_data.get("pains") or []
     for p in pain_points_data:
+        comments_list = p.get("sample_comments", []) or []
+        num_quotes = len(comments_list)
+        
+        # Se temos dados reais minerados, a frequência é calculada matematicamente
+        if total_mined > 0:
+            calc_freq = round((num_quotes / total_mined) * 100, 1)
+            # Se não teve citação literal vinculada, atribui proporção base
+            freq_val = calc_freq if calc_freq > 0 else round(100.0 / max(len(pain_points_data), 1), 1)
+        else:
+            freq_val = float(p.get("frequency_percentage", 25.0))
+
         db.add(PainPoint(
             analysis_id=new_analysis.id,
             category=p.get("category", "Geral"),
             title=p.get("title", ""),
             description=p.get("description", ""),
-            frequency_percentage=float(p.get("frequency_percentage", 0.0)),
+            frequency_percentage=freq_val,
             severity=p.get("severity", "medium"),
-            sample_comments=p.get("sample_comments", []),
+            sample_comments=comments_list,
             financial_impact=p.get("financial_impact"),
             competitors_affected=p.get("competitors_affected", [])
         ))
