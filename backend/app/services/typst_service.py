@@ -43,7 +43,13 @@ class TypstPdfService:
 
         try:
             pdf_bytes = typst.compile(tmp_in_path)
+            if pdf_bytes is None:
+                raise RuntimeError("O compilador Typst retornou vazio (None).")
             return pdf_bytes
+        except Exception as err:
+            import logging
+            logging.error(f"Erro de compilacao Typst: {err}\nCodigo Typst gerado:\n{typ_code}")
+            raise RuntimeError(f"Typst compile error: {err}")
         finally:
             if os.path.exists(tmp_in_path):
                 os.remove(tmp_in_path)
