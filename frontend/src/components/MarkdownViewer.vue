@@ -46,9 +46,9 @@ const exportDirectPdf = async () => {
       throw new Error('ID da análise não fornecido.')
     }
     await downloadDossierPdf(props.analysisId, props.keyword)
-  } catch (err) {
+  } catch (err: any) {
     console.error('Erro ao baixar PDF via backend:', err)
-    alert('Erro ao conectar ao servidor de PDF. Verifique se o container backend foi reiniciado.')
+    alert(`Erro ao gerar PDF: ${err.message || 'Falha no servidor'}`)
   } finally {
     exporting.value = false
   }
