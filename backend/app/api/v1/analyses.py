@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.models import Niche, Analysis, PainPoint, RecommendedFeature, HookCopy, FaqItem, DossierReport
 from app.schemas import AnalysisCreateRequest, AnalysisResponse, DossierResponse
 from app.services.llm_orchestrator import LLMOrchestrator
+from app.services.scrapecreators.real_miner import ScrapeCreatorsClient
 from app.services.dossier_compiler import DossierCompiler
 from app.services.typst_service import TypstPdfService
 
@@ -70,25 +71,38 @@ async def create_or_get_analysis(
             resp.is_cached = True
             return resp
 
-    # 3. Cache Miss / Force Refresh -> Executa Orquestrador Multi-LLM com Failover
+    # 3. Cache Miss / Force Refresh -> Minera dados reais se modo="live"
+    mined_comments = []
+    if payload.mode == "live":
+        miner = ScrapeCreatorsClient()
+        if miner.is_configured():
+            mined_comments = await miner.mine_social_discussions(keyword_clean, max_interactions=50)
+
+    # 4. Executa Orquestrador Multi-LLM com Failover enriquecido com dados minerados
     raw_data = await LLMOrchestrator.synthesize(
         keyword=keyword_clean,
-        niche_name=niche.name
+        niche_name=niche.name,
+        mined_comments=mined_comments
     )
 
-    # 4. Grava Nova Análise no PostgreSQL
+    sample_size = raw_data.get("sample_size", 100)
+    if mined_comments:
+        sample_size = max(sample_size, len(mined_comments) * 3)
+
+    # 5. Grava Nova Análise no PostgreSQL
     new_analysis = Analysis(
         niche_id=payload.niche_id,
         keyword=keyword_clean,
         mode=payload.mode or "mock",
         sources_selected=payload.sources,
-        sample_size=raw_data["sample_size"]
+        sample_size=sample_size
     )
     db.add(new_analysis)
     await db.flush()  # Obtém ID da análise
 
-    # Adiciona itens relacionais filtrando campos extras do prompt de síntese
-    for p in raw_data["pain_points"]:
+    # Adiciona itens relacionais com extração resiliente de chaves
+    pain_points_data = raw_data.get("pain_points") or raw_data.get("pains") or []
+    for p in pain_points_data:
         db.add(PainPoint(
             analysis_id=new_analysis.id,
             category=p.get("category", "Geral"),
@@ -98,7 +112,8 @@ async def create_or_get_analysis(
             severity=p.get("severity", "medium")
         ))
 
-    for f in raw_data["recommended_features"]:
+    features_data = raw_data.get("recommended_features") or raw_data.get("features") or []
+    for f in features_data:
         db.add(RecommendedFeature(
             analysis_id=new_analysis.id,
             title=f.get("title", ""),
@@ -110,7 +125,8 @@ async def create_or_get_analysis(
             rice_score=float(f.get("rice_score", 0.0))
         ))
 
-    for h in raw_data["hook_copies"]:
+    hooks_data = raw_data.get("hook_copies") or raw_data.get("hooks") or []
+    for h in hooks_data:
         db.add(HookCopy(
             analysis_id=new_analysis.id,
             placement=h.get("placement", "hero_headline"),
@@ -118,7 +134,8 @@ async def create_or_get_analysis(
             intent=h.get("intent", "social_proof")
         ))
 
-    for faq in raw_data["faq_items"]:
+    faqs_data = raw_data.get("faq_items") or raw_data.get("faqs") or []
+    for faq in faqs_data:
         db.add(FaqItem(
             analysis_id=new_analysis.id,
             question=faq.get("question", ""),

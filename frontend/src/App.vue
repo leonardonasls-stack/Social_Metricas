@@ -24,7 +24,7 @@ const niches = ref<Niche[]>([])
 const selectedNicheId = ref<string>('')
 const keyword = ref<string>('sistema de ordem de serviço')
 const forceRefresh = ref<boolean>(false)
-const mode = ref<string>('mock')
+const mode = ref<string>('live')
 const selectedSources = ref<string[]>(['reddit', 'tiktok', 'instagram', 'youtube'])
 
 const loading = ref<boolean>(false)
@@ -202,17 +202,19 @@ const copyText = async (text: string) => {
 
         <!-- Opções Avançadas e Botão de Ação -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-3 border-t border-slate-800/80">
-          <div class="flex flex-wrap items-center gap-3">
-            <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
-              <input
-                type="checkbox"
-                v-model="mode"
-                true-value="mock"
-                false-value="live"
-                class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-800"
-              />
-              Modo Sandbox (Mock de Alta Fidelidade)
-            </label>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400">Modo de Mineração:</span>
+              <button
+                type="button"
+                @click="mode = mode === 'live' ? 'mock' : 'live'"
+                class="px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5"
+                :class="mode === 'live' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-300 border-slate-700'"
+              >
+                <span class="w-2 h-2 rounded-full" :class="mode === 'live' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'"></span>
+                {{ mode === 'live' ? '🔥 Pesquisa Real (ScrapeCreators Ao Vivo)' : '🧪 Sandbox (Mock)' }}
+              </button>
+            </div>
 
             <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
               <input
@@ -220,7 +222,7 @@ const copyText = async (text: string) => {
                 v-model="forceRefresh"
                 class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-800"
               />
-              Forçar Reanálise (Ignorar Cache)
+              Forçar Nova Busca (Ignorar Cache)
             </label>
           </div>
 

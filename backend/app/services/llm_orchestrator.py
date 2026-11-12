@@ -82,8 +82,29 @@ class LLMOrchestrator:
     """
 
     @classmethod
-    async def synthesize(cls, keyword: str, niche_name: str) -> Dict[str, Any]:
-        user_message = f"Analise o termo: '{keyword}' no nicho: '{niche_name}'. Identifique as 4 maiores dores reais, 4 features detalhadas com RICE Score, 3 hooks com variações e 4 FAQs anti-objeção."
+    async def synthesize(
+        cls,
+        keyword: str,
+        niche_name: str,
+        mined_comments: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        comments_context = ""
+        if mined_comments and len(mined_comments) > 0:
+            formatted_quotes = []
+            for item in mined_comments[:30]:
+                formatted_quotes.append(f"- [{item.get('source', 'social')} | @{item.get('author', 'user')}]: \"{item.get('content')}\"")
+            comments_context = (
+                "\n\n--- DADOS REAIS MINERADOS DAS REDES SOCIAIS (ScrapeCreators) ---\n"
+                + "\n".join(formatted_quotes)
+                + "\n--- FIM DOS DADOS MINERADOS ---\n"
+                + "INSTRUÇÃO CRUCIAL: Baseie suas dores, severidades, termos e citações de sample_comments estritamente nas discussões reais mineradas acima."
+            )
+
+        user_message = (
+            f"Analise o termo: '{keyword}' no nicho: '{niche_name}'. "
+            f"Identifique as 4 maiores dores reais, 4 features detalhadas com RICE Score, 3 hooks com variações e 4 FAQs anti-objeção."
+            f"{comments_context}"
+        )
 
         # 1. Tentativa: Google Gemini
         if settings.GEMINI_API_KEY:
@@ -120,6 +141,40 @@ class LLMOrchestrator:
         return cls._local_contextual_fallback(keyword, niche_name)
 
     @classmethod
+    def _clean_json_response(cls, text: str) -> Dict[str, Any]:
+        """Extrai e sanitiza JSON retornado por LLMs que colocam tags markdown ou quebras."""
+        s = text.strip()
+        if s.startswith("```json"):
+            s = s[7:]
+        elif s.startswith("```"):
+            s = s[3:]
+        if s.endswith("```"):
+            s = s[:-3]
+        s = s.strip()
+        
+        start = s.find("{")
+        end = s.rfind("}")
+        if start != -1 and end != -1:
+            s = s[start:end+1]
+            
+        data = json.loads(s)
+        if "pain_points" not in data and "pains" in data:
+            data["pain_points"] = data["pains"]
+        if "recommended_features" not in data and "features" in data:
+            data["recommended_features"] = data["features"]
+        if "hook_copies" not in data and "hooks" in data:
+            data["hook_copies"] = data["hooks"]
+        if "faq_items" not in data and "faqs" in data:
+            data["faq_items"] = data["faqs"]
+            
+        data.setdefault("pain_points", [])
+        data.setdefault("recommended_features", [])
+        data.setdefault("hook_copies", [])
+        data.setdefault("faq_items", [])
+        data.setdefault("sample_size", 120)
+        return data
+
+    @classmethod
     async def _call_gemini(cls, prompt: str) -> Optional[Dict[str, Any]]:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
         payload = {
@@ -136,12 +191,12 @@ class LLMOrchestrator:
                 "temperature": 0.4
             }
         }
-        async with httpx.AsyncClient(timeout=25.0) as client:
+        async with httpx.AsyncClient(timeout=35.0) as client:
             resp = await client.post(url, json=payload)
             if resp.status_code == 200:
                 data = resp.json()
                 text = data["candidates"][0]["content"]["parts"][0]["text"]
-                return json.loads(text)
+                return cls._clean_json_response(text)
             resp.raise_for_status()
         return None
 
@@ -166,7 +221,7 @@ class LLMOrchestrator:
             if resp.status_code == 200:
                 data = resp.json()
                 text = data["choices"][0]["message"]["content"]
-                return json.loads(text)
+                return cls._clean_json_response(text)
             resp.raise_for_status()
         return None
 
@@ -190,8 +245,7 @@ class LLMOrchestrator:
             if resp.status_code == 200:
                 data = resp.json()
                 text = data["choices"][0]["message"]["content"]
-                text_clean = text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-                return json.loads(text_clean)
+                return cls._clean_json_response(text)
             resp.raise_for_status()
         return None
 
